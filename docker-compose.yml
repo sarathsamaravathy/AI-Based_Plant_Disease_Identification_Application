@@ -1,0 +1,69 @@
+version: '3.9'
+
+services:
+  api:
+    build: .
+    container_name: plant-disease-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://farmer:password@postgres:5432/plant_disease_db
+      - LLM_API_URL=http://ollama:11434/api
+    depends_on:
+      - postgres
+      - ollama
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - ./models:/app/models
+    networks:
+      - plant-net
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: plant-disease-postgres
+    environment:
+      POSTGRES_USER: farmer
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: plant_disease_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - plant-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U farmer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: plant-disease-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - plant-net
+
+  mlflow:
+    image: python:3.11-slim
+    container_name: plant-disease-mlflow
+    working_dir: /app
+    command: "pip install mlflow && mlflow server --host 0.0.0.0 --port 5000"
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/app/mlruns
+    networks:
+      - plant-net
+
+volumes:
+  postgres_data:
+  ollama_data:
+
+networks:
+  plant-net:
+    driver: bridge
