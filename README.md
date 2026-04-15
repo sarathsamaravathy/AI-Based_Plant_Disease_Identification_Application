@@ -28,11 +28,16 @@ This repository contains a simplified prototype for identifying plant diseases u
 
 ### Prerequisites
 
-- Python 3.11+
+**Recommended:** Python 3.11 (not 3.12+)
+
+- Python 3.11 (do not use Python 3.12 for ML projects)
 - Node.js 18+
 - Docker + Docker Compose
 - PostgreSQL
 - Ollama service running locally
+
+> **Troubleshooting:**
+> Some ML/data science packages (numpy, scipy, etc.) and their build tools are not yet compatible with Python 3.12+. If you see errors about `ImpImporter` or failed builds, use Python 3.11 instead.
 
 ### Setup Backend
 
