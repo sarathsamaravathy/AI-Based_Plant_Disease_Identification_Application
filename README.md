@@ -37,7 +37,14 @@ This repository contains a simplified prototype for identifying plant diseases u
 ### Setup Backend
 
 1. Copy `.env.example` to `.env`
-2. Install Python dependencies:
+
+2. Upgrade pip, setuptools, and wheel (recommended for Windows/Python 3.12+):
+
+```bash
+pip install --upgrade pip setuptools wheel
+```
+
+3. Install Python dependencies:
 
 ```bash
 pip install -r requirements.txt
