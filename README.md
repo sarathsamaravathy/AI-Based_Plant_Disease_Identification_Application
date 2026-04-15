@@ -1,0 +1,2 @@
+# AI-Based_Plant_Disease_Identification_Application
+Multilingual AI-Based Plant Disease Identification Application
