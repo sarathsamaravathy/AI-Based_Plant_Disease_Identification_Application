@@ -4,13 +4,13 @@ Multilingual AI-based plant disease diagnosis application using a Vue.js fronten
 
 ## Overview
 
-This repository contains a simplified prototype for identifying plant diseases using image and symptom inputs. The system supports multilingual output for regional Indian languages and uses a self-hosted LLM backend for reasoning.
+This repository contains a prototype for identifying plant diseases from leaf images or symptom descriptions. It supports multilingual output for regional Indian languages and uses a self-hosted LLM backend for reasoning.
 
 ## Technology Stack
 
 - Frontend: Vue.js 3 + Vite
 - Backend: FastAPI
-- Model inference: PyTorch / torchvision
+- Vision: PyTorch + torchvision
 - Database: PostgreSQL
 - Vector store: Chroma (local)
 - LLM orchestration: Ollama
@@ -26,49 +26,67 @@ This repository contains a simplified prototype for identifying plant diseases u
 
 ## Getting Started
 
-### Prerequisites
+### 1. Clone the repository
 
-**Recommended:** Python 3.11, or Python 3.12 with updated packaging tools.
+```bash
+git clone https://github.com/sarathsamaravathy/AI-Based_Plant_Disease_Identification_Application.git
+cd AI-Based_Plant_Disease_Identification_Application
+```
+
+### 2. Prerequisites
 
 - Python 3.11 or 3.12
 - Node.js 18+
-- Docker + Docker Compose
+- Docker & Docker Compose (recommended)
 - PostgreSQL
-- Ollama service running locally
+- Ollama service running locally for the LLM backend
 
-> **Troubleshooting:**
-> If you use Python 3.12 and see errors during dependency install, first upgrade packaging tools and prefer binary wheels. If a package build still fails because it imports `pkg_resources`, use the compatibility fallback below.
+### 3. Backend Setup
 
-### Setup Backend
+1. Create and activate a Python virtual environment:
 
-1. Copy `.env.example` to `.env`
+```bash
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# macOS/Linux
+source venv/bin/activate
+```
 
-2. Upgrade pip, setuptools, and wheel:
+2. Upgrade packaging tools:
 
 ```bash
 python -m pip install --upgrade pip setuptools wheel
 ```
 
-3. Install Python dependencies, preferring binary wheels:
+3. Install Python dependencies:
 
 ```bash
 python -m pip install --prefer-binary -r requirements.txt
 ```
 
-4. If the install still fails with `ModuleNotFoundError: No module named 'pkg_resources'`, use:
+4. If install fails with `ModuleNotFoundError: No module named 'pkg_resources'`, use the compatibility fallback:
 
 ```bash
 python -m pip install "setuptools<80.10.3"
 python -m pip install --prefer-binary -r requirements.txt
 ```
 
-5. Start the backend locally:
+5. Copy the environment file:
+
+```bash
+cp .env.example .env
+```
+
+6. Start the backend:
 
 ```bash
 uvicorn src.api.main:app --reload
 ```
 
-### Setup Frontend
+The API will be available at `http://localhost:8000`.
+
+### 4. Frontend Setup
 
 1. Change into the frontend directory:
 
@@ -76,35 +94,64 @@ uvicorn src.api.main:app --reload
 cd frontend
 ```
 
-2. Install npm dependencies:
+2. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Start the frontend dev server:
+3. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-### Docker Compose
+The frontend will be available at `http://localhost:5173`.
 
-Start the full stack with:
+### 5. Docker Compose (Optional)
+
+To run the full stack locally:
 
 ```bash
 docker-compose up -d
 ```
 
+### 6. Common Commands
+
+- Run backend tests:
+
+```bash
+pytest tests/ -v
+```
+
+- Lint Python code:
+
+```bash
+flake8 src --max-line-length=100
+```
+
+- Format Python code:
+
+```bash
+black src --line-length=100
+```
+
 ## Repository Structure
 
-- `src/` - Python backend and AI modules
-- `frontend/` - Vue.js application
-- `data/` - Dataset and storage placeholders
-- `models/` - Model artifacts
-- `tests/` - Unit and integration tests
-- `docs/` - Architecture and deployment documentation
+- `frontend/` — Vue.js application
+- `src/` — Python backend, AI modules, API
+- `data/` — datasets and sample inputs
+- `models/` — pretrained model artifacts
+- `tests/` — unit and integration tests
+- `docker-compose.yml` — local orchestration
+- `requirements.txt` — Python dependencies
+
+## Troubleshooting
+
+- Use Python 3.11 when possible for the most stable install experience.
+- If using Python 3.12, upgrade `pip setuptools wheel` before installing dependencies.
+- If you hit `pkg_resources` build failures, install `setuptools<80.10.3` and retry.
 
 ## Notes
 
-This repository is a working scaffold for plant disease identification and is intended for local development and prototype evaluation.
+This project is intended as a development prototype for plant disease diagnosis and requires manual validation before any production use.
