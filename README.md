@@ -108,6 +108,8 @@ ollama serve
 
 ### Step 5: Frontend Setup
 
+> **Note:** The frontend runs on Node.js and doesn't require the Python virtual environment. Keep your backend terminal running with the activated venv.
+
 1. **Open a new terminal** and navigate to the project directory:
 
    ```bash
@@ -119,6 +121,12 @@ ollama serve
    ```bash
    cd frontend
    ```
+
+   > **Note:** If the `frontend` folder is empty, you may need to initialize it with a Vue.js project:
+   > ```bash
+   > npm create vue@latest .
+   > # Follow the prompts to set up your Vue project
+   > ```
 
 3. **Install Node.js dependencies:**
 
