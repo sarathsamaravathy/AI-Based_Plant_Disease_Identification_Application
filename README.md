@@ -16,7 +16,7 @@ A multilingual AI-powered application for identifying plant diseases from leaf i
 
 Before installing, ensure you have the following:
 
-- **Python 3.11 or 3.12** (3.12 recommended for latest features)
+- **Python 3.11 or 3.12** (tested successfully on Python 3.127)
 - **Node.js 18+** (for frontend development)
 - **PostgreSQL** (for data storage)
 - **Ollama** (for local LLM inference)
