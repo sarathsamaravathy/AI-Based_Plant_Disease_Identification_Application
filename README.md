@@ -1,152 +1,244 @@
 # AI-Based Plant Disease Identification Application
 
-Multilingual AI-based plant disease diagnosis application using a Vue.js frontend and FastAPI backend.
-
-## Overview
-
-This repository contains a prototype for identifying plant diseases from leaf images or symptom descriptions. It supports multilingual output for regional Indian languages and uses a self-hosted LLM backend for reasoning.
-
-## Technology Stack
-
-- Frontend: Vue.js 3 + Vite
-- Backend: FastAPI
-- Vision: PyTorch + torchvision
-- Database: PostgreSQL
-- Vector store: Chroma (local)
-- LLM orchestration: Ollama
-- MLOps: MLflow (local tracking)
+A multilingual AI-powered application for identifying plant diseases from leaf images or symptom descriptions. Built with Vue.js frontend and FastAPI backend, supporting 22 Indian languages.
 
 ## Features
 
-- Upload leaf images for disease diagnosis
-- Text-based symptom reporting
-- Multilingual result formatting
-- Feedback capture for model improvement
-- Docker Compose orchestration for local development
+- 🖼️ **Image-based diagnosis**: Upload leaf images for disease detection
+- 📝 **Text-based reporting**: Describe symptoms in natural language
+- 🌍 **Multilingual support**: Results in 22 Indian languages (Hindi, Tamil, Telugu, etc.)
+- 🤖 **AI-powered reasoning**: Uses self-hosted LLMs via Ollama
+- 📊 **Feedback system**: Collect user feedback for model improvement
+- 🐳 **Docker support**: Easy deployment with Docker Compose
+- 📈 **MLOps tracking**: MLflow integration for experiment tracking
 
-## Getting Started
+## Prerequisites
 
-### 1. Clone the repository
+Before installing, ensure you have the following:
+
+- **Python 3.11 or 3.12** (3.12 recommended for latest features)
+- **Node.js 18+** (for frontend development)
+- **PostgreSQL** (for data storage)
+- **Ollama** (for local LLM inference)
+- **Git** (for cloning the repository)
+- **Docker & Docker Compose** (optional, for containerized deployment)
+
+## Installation
+
+### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/sarathsamaravathy/AI-Based_Plant_Disease_Identification_Application.git
 cd AI-Based_Plant_Disease_Identification_Application
 ```
 
-### 2. Prerequisites
+### Step 2: Set Up PostgreSQL Database
 
-- Python 3.11 or 3.12 (Tested successfully on Python 3.12.7)
-- Node.js 18+
-- Docker & Docker Compose (recommended)
-- PostgreSQL
-- Ollama service running locally for the LLM backend
+1. Install PostgreSQL if not already installed
+2. Create a database named `plant_disease_db`
+3. Note the connection details (host, port, username, password)
 
-### 3. Backend Setup
+### Step 3: Set Up Ollama (LLM Backend)
 
-1. Create and activate a Python virtual environment:
-
-```bash
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# macOS/Linux
-source venv/bin/activate
-```
-
-2. Upgrade packaging tools:
+1. Install Ollama from [ollama.ai](https://ollama.ai)
+2. Pull the required model:
 
 ```bash
-python -m pip install --upgrade pip setuptools wheel
+ollama pull llama2  # or any supported model
 ```
 
-3. Install Python dependencies:
+3. Start Ollama service:
 
 ```bash
-python -m pip install --prefer-binary -r requirements.txt
+ollama serve
 ```
 
-4. If install fails with `ModuleNotFoundError: No module named 'pkg_resources'`, use the compatibility fallback:
+### Step 4: Backend Setup
 
-```bash
-python -m pip install "setuptools<80.10.3"
-python -m pip install --prefer-binary -r requirements.txt
-```
+1. **Create virtual environment:**
 
-> Note: `fasttext` has been removed from the dependency list because it is not required for the core CV/embedding flow and can block Python 3.12 installs.
+   ```bash
+   python -m venv venv
+   ```
 
-5. Copy the environment file:
+2. **Activate virtual environment:**
 
-```bash
-cp .env.example .env
-```
+   - **Windows:**
+     ```bash
+     venv\Scripts\activate
+     ```
+   - **macOS/Linux:**
+     ```bash
+     source venv/bin/activate
+     ```
 
-6. Start the backend:
+3. **Upgrade packaging tools:**
 
-```bash
-uvicorn src.api.main:app --reload
-```
+   ```bash
+   python -m pip install --upgrade pip setuptools wheel
+   ```
 
-The API will be available at `http://localhost:8000`.
+4. **Install Python dependencies:**
 
-### 4. Frontend Setup
+   ```bash
+   python -m pip install --prefer-binary -r requirements.txt
+   ```
 
-1. Change into the frontend directory:
+   > **Note:** If you encounter `ModuleNotFoundError: No module named 'pkg_resources'`, use this fallback:
+   > ```bash
+   > python -m pip install "setuptools<80.10.3"
+   > python -m pip install --prefer-binary -r requirements.txt
+   > ```
 
-```bash
-cd frontend
-```
+5. **Configure environment variables:**
 
-2. Install dependencies:
+   ```bash
+   cp .env.example .env
+   ```
 
-```bash
-npm install
-```
+   Edit `.env` with your database and Ollama settings.
 
-3. Start the development server:
+6. **Start the backend server:**
 
-```bash
-npm run dev
-```
+   ```bash
+   uvicorn src.api.main:app --reload
+   ```
 
-The frontend will be available at `http://localhost:5173`.
+   The API will be available at `http://localhost:8000`.
 
-### 5. Docker Compose (Optional)
+### Step 5: Frontend Setup
 
-To run the full stack locally:
+1. **Open a new terminal** and navigate to the project directory:
+
+   ```bash
+   cd AI-Based_Plant_Disease_Identification_Application
+   ```
+
+2. **Change to frontend directory:**
+
+   ```bash
+   cd frontend
+   ```
+
+3. **Install Node.js dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+4. **Start the development server:**
+
+   ```bash
+   npm run dev
+   ```
+
+   The frontend will be available at `http://localhost:5173`.
+
+### Step 6: Alternative - Docker Setup (Optional)
+
+If you prefer using Docker:
 
 ```bash
 docker-compose up -d
 ```
 
-### 6. Common Commands
+This will start all services (backend, frontend, database, Ollama) in containers.
 
-- Run backend tests:
+## Usage
 
-```bash
-pytest tests/ -v
-```
+1. Open your browser and go to `http://localhost:5173`
+2. Upload a leaf image or describe symptoms
+3. Select your preferred language
+4. Get AI-powered disease diagnosis with treatment suggestions
 
-- Lint Python code:
+## Testing
 
-```bash
-flake8 src --max-line-length=100
-```
-
-- Format Python code:
+### Backend Tests
 
 ```bash
-black src --line-length=100
+# Activate virtual environment first
+pytest tests/ -v --cov=src
 ```
+
+### Frontend Tests
+
+```bash
+cd frontend
+npm test
+```
+
+## Development Commands
+
+- **Lint Python code:** `flake8 src --max-line-length=100`
+- **Format Python code:** `black src --line-length=100`
+- **Lint frontend:** `cd frontend && npm run lint`
+- **Format frontend:** `cd frontend && npm run format`
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Python 3.12 installation issues:**
+   - Upgrade pip/setuptools: `python -m pip install --upgrade pip setuptools wheel`
+   - Use `--prefer-binary` flag for installations
+
+2. **Database connection errors:**
+   - Ensure PostgreSQL is running
+   - Check `.env` file for correct database credentials
+
+3. **Ollama not responding:**
+   - Verify Ollama service is running: `ollama serve`
+   - Check model is pulled: `ollama list`
+
+4. **Port conflicts:**
+   - Backend: Change port in `uvicorn` command
+   - Frontend: Check `vite.config.js` for port settings
+
+5. **Memory issues:**
+   - Reduce batch sizes in model configurations
+   - Use smaller models if available
+
+### Getting Help
+
+- Check the [Issues](https://github.com/sarathsamaravathy/AI-Based_Plant_Disease_Identification_Application/issues) page
+- Review the [Wiki](https://github.com/sarathsamaravathy/AI-Based_Plant_Disease_Identification_Application/wiki) for detailed guides
 
 ## Repository Structure
 
-- `frontend/` — Vue.js application
-- `src/` — Python backend, AI modules, API
-- `data/` — datasets and sample inputs
-- `models/` — pretrained model artifacts
-- `tests/` — unit and integration tests
-- `docker-compose.yml` — local orchestration
-- `requirements.txt` — Python dependencies
+```
+├── frontend/          # Vue.js application
+├── src/              # Python backend code
+│   ├── api/          # FastAPI routes
+│   ├── database/     # Database models and connections
+│   ├── vision/       # Computer vision modules
+│   ├── llm/          # LLM integration
+│   └── multilingual/ # Translation and TTS
+├── data/             # Sample datasets
+├── models/           # Pretrained model artifacts
+├── tests/            # Unit and integration tests
+├── docker-compose.yml # Container orchestration
+└── requirements.txt  # Python dependencies
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Make your changes and add tests
+4. Run tests: `pytest tests/ -v`
+5. Commit changes: `git commit -am 'Add your feature'`
+6. Push to branch: `git push origin feature/your-feature`
+7. Submit a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- PlantVillage dataset for training data
+- AI4Bharat for Indic language models
+- Meta for Llama models via Ollama
 
 ## Troubleshooting
 
