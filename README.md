@@ -28,34 +28,41 @@ This repository contains a simplified prototype for identifying plant diseases u
 
 ### Prerequisites
 
-**Recommended:** Python 3.11 (not 3.12+)
+**Recommended:** Python 3.11, or Python 3.12 with updated packaging tools.
 
-- Python 3.11 (do not use Python 3.12 for ML projects)
+- Python 3.11 or 3.12
 - Node.js 18+
 - Docker + Docker Compose
 - PostgreSQL
 - Ollama service running locally
 
 > **Troubleshooting:**
-> Some ML/data science packages (numpy, scipy, etc.) and their build tools are not yet compatible with Python 3.12+. If you see errors about `ImpImporter` or failed builds, use Python 3.11 instead.
+> If you use Python 3.12 and see errors during dependency install, first upgrade packaging tools and prefer binary wheels. If a package build still fails because it imports `pkg_resources`, use the compatibility fallback below.
 
 ### Setup Backend
 
 1. Copy `.env.example` to `.env`
 
-2. Upgrade pip, setuptools, and wheel (recommended for Windows/Python 3.12+):
+2. Upgrade pip, setuptools, and wheel:
 
 ```bash
-pip install --upgrade pip setuptools wheel
+python -m pip install --upgrade pip setuptools wheel
 ```
 
-3. Install Python dependencies:
+3. Install Python dependencies, preferring binary wheels:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install --prefer-binary -r requirements.txt
 ```
 
-3. Start the backend locally:
+4. If the install still fails with `ModuleNotFoundError: No module named 'pkg_resources'`, use:
+
+```bash
+python -m pip install "setuptools<80.10.3"
+python -m pip install --prefer-binary -r requirements.txt
+```
+
+5. Start the backend locally:
 
 ```bash
 uvicorn src.api.main:app --reload
