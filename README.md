@@ -116,16 +116,10 @@ ollama serve
    cd AI-Based_Plant_Disease_Identification_Application
    ```
 
-2. **Create and set up the frontend directory:**
+2. **Navigate to the frontend directory:**
 
    ```bash
-   # Create frontend directory if it doesn't exist
-   mkdir frontend
    cd frontend
-
-   # Initialize Vue.js project
-   npm create vue@latest .
-   # Follow the prompts to set up your Vue project
    ```
 
 3. **Install Node.js dependencies:**
