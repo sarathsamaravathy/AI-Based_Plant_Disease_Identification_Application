@@ -16,10 +16,9 @@ ollama==0.1.0
 sentence-transformers==2.2.2
 
 # Vector Database
-chromadb==0.4.5
+chromadb>=0.4.18
 
 # Translation & Multilingual
-indicnlp==0.96.1
 indic-nlp-library==0.95.1
 
 # Text-to-Speech
