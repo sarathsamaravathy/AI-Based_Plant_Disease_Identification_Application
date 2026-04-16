@@ -72,6 +72,8 @@ python -m pip install "setuptools<80.10.3"
 python -m pip install --prefer-binary -r requirements.txt
 ```
 
+> Note: `fasttext` has been removed from the dependency list because it is not required for the core CV/embedding flow and can block Python 3.12 installs.
+
 5. Copy the environment file:
 
 ```bash
