@@ -35,7 +35,7 @@ cd AI-Based_Plant_Disease_Identification_Application
 
 ### 2. Prerequisites
 
-- Python 3.11 or 3.12
+- Python 3.11 or 3.12 (Tested successfully on Python 3.12.7)
 - Node.js 18+
 - Docker & Docker Compose (recommended)
 - PostgreSQL
