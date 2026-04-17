@@ -3,11 +3,11 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-ARG VITE_API_BASE=http://localhost:8000/api/v1
+ARG VITE_API_BASE=/api/v1
 ENV VITE_API_BASE=$VITE_API_BASE
 
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN if [ -f package-lock.json ]; then npm ci --include=dev; else npm install --include=dev; fi
 
 COPY . .
 RUN npm run build
