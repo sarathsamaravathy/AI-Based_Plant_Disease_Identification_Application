@@ -12,7 +12,6 @@ RUN npm config set fund false \
 	&& npm config set audit false \
 	&& npm config set update-notifier false \
 	&& npm config set strict-ssl false \
-	&& npm config set optional true \
 	&& npm cache clean --force \
 	&& (if [ -f package-lock.json ]; then npm ci --include=dev --loglevel=verbose; else npm install --include=dev --loglevel=verbose; fi \
 		|| npm install --include=dev --legacy-peer-deps --loglevel=verbose) \
