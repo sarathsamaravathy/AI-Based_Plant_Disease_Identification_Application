@@ -15,14 +15,10 @@ A multilingual AI-powered application for identifying plant diseases from leaf i
 
 ## Prerequisites
 
-Before installing, ensure you have the following:
+For the recommended Docker-based setup, you only need:
 
-- **Python 3.11 or 3.12** (tested successfully on Python 3.127)
-- **Node.js 18+** (for frontend development)
-- **PostgreSQL** (for data storage)
-- **Ollama** (for local LLM inference)
 - **Git** (for cloning the repository)
-- **Docker & Docker Compose** (optional, for containerized deployment)
+- **Docker Desktop** (includes Docker Compose)
 
 ### Windows Docker requirement (important)
 
@@ -38,9 +34,9 @@ docker info
 
 If `docker info` shows a pipe error like `dockerDesktopLinuxEngine`, Docker Desktop/WSL is not running yet.
 
-## Installation
-https://git-scm.com/install/windows (Git installation)
-### Step 1: Clone the Repository
+## Quick Start (Recommended: Docker)
+
+### Step 1: Clone the repository
 
 ```bash
 git clone https://github.com/sarathsamaravathy/AI-Based_Plant_Disease_Identification_Application.git
@@ -49,30 +45,79 @@ git clone https://github.com/sarathsamaravathy/AI-Based_Plant_Disease_Identifica
 cd AI-Based_Plant_Disease_Identification_Application
 ```
 
-### Step 2: Set Up PostgreSQL Database
+### Step 2: Start all services with Docker
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+This starts backend, frontend, PostgreSQL, Ollama, and MLflow in containers.
+
+### Step 3: Pull the LLM model inside Ollama container (first run only)
+
+```bash
+docker exec -it plant-disease-ollama ollama list
+```
+
+If your configured model is not listed, pull it. Example:
+
+```bash
+docker exec -it plant-disease-ollama ollama pull llama3
+```
+
+### Step 4: Open the app
+
+```bash
+http://localhost
+http://localhost:8000/docs
+```
+
+If Docker fails to start on Windows, check:
+
+```bash
+docker info
+wsl --status
+wsl -l -v
+```
+
+## Alternative: Local Installation (Non-Docker)
+
+Use this only if you do not want to run containers.
+
+### Local prerequisites
+
+- **Python 3.11 or 3.12** (tested successfully on Python 3.12.7)
+- **Node.js 18+**
+- **PostgreSQL**
+- **Ollama**
+
+https://git-scm.com/install/windows (Git installation)
+
+### Step A: Set up PostgreSQL
 
 1. Install PostgreSQL if not already installed
 2. Create a database named `plant_disease_db`
 3. Note the connection details (host, port, username, password)
 
-### Step 3: Set Up Ollama (LLM Backend)
+### Step B: Set up Ollama
 
 1. Install Ollama from [ollama.ai](https://ollama.ai)
 2. Pull the required model:
 
 ```bash
-ollama pull llama3  # or any supported model
+ollama pull llama3
 ```
 
 3. Start Ollama service:
 
 ```bash
 ollama serve
-#or if its already running ->
+# or if it is already running:
 ollama run llama3
 ```
 
-### Step 4: Backend Setup
+### Step C: Backend setup
 
 1. **Create virtual environment:**
    Install Python 3.12.7
@@ -131,7 +176,7 @@ cd AI-Based_Plant_Disease_Identification_Application
 
    The API will be available at `http://localhost:8000`.
 
-### Step 5: Frontend Setup
+### Step D: Frontend setup
 
 > **Note:** The frontend runs on Node.js and doesn't require the Python virtual environment. Keep your backend terminal running with the activated venv.
 
@@ -168,52 +213,6 @@ cd AI-Based_Plant_Disease_Identification_Application
 > ```
 >
 > On the diagnosis page, the **Output Language** selector is available for both image and symptom-based diagnosis.
-
-### Step 6: Alternative - Docker Setup (Optional)
-
-If you prefer using Docker on Windows, use the following sequence:
-
-1. Open Docker Desktop and confirm it is running.
-2. From the project root, build and start the stack:
-
-```bash
-docker compose up --build
-```
-
-3. Pull the LLM model inside the Ollama container (first run only):
-
-```bash
-docker exec -it plant-disease-ollama ollama list
-```
-
-If your model is not listed, pull the same model name configured in `.env` (`LLM_MODEL`).
-Example:
-
-```bash
-docker exec -it plant-disease-ollama ollama pull llama2
-```
-
-If you set `LLM_MODEL=llama3`, then run:
-
-```bash
-docker exec -it plant-disease-ollama ollama pull llama3
-```
-
-4. Open the app and API docs:
-
-```bash
-http://localhost
-http://localhost:8000/docs
-```
-
-This starts backend, frontend, PostgreSQL, Ollama, and MLflow in containers.
-
-If Docker still fails to start on Windows, check WSL:
-
-```bash
-wsl --status
-wsl -l -v
-```
 
 ## Usage
 
