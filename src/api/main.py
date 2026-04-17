@@ -91,6 +91,8 @@ async def startup_event():
 
     # 2. Vision model -----------------------------------------------------
     model_path = os.getenv("VISION_MODEL_PATH", "./models/vision/plant_disease.pt")
+    hf_model_id = os.getenv("HF_MODEL_ID", "BrandonFors/effnetv2_s_plant_disease")
+    auto_download_pretrained = os.getenv("AUTO_DOWNLOAD_PRETRAINED_MODEL", "false").lower() == "true"
     if os.path.isfile(model_path):
         try:
             from src.vision.model import VisionModel
@@ -99,7 +101,18 @@ async def startup_event():
         except Exception as exc:
             logger.warning(f"Could not load vision model: {exc} – using mock data.")
     else:
-        logger.info(f"No model checkpoint at {model_path} – using mock data.")
+        if auto_download_pretrained:
+            try:
+                from src.vision.hf_loader import convert_huggingface_model_to_local_checkpoint
+                logger.info(f"No local checkpoint found. Downloading pretrained model from {hf_model_id} ...")
+                convert_huggingface_model_to_local_checkpoint(hf_model_id, model_path)
+                from src.vision.model import VisionModel
+                _vision_model = VisionModel.load(model_path)
+                logger.info(f"Pretrained Hugging Face model converted and loaded from {model_path}")
+            except Exception as exc:
+                logger.warning(f"Could not bootstrap pretrained model: {exc} – using mock data.")
+        else:
+            logger.info(f"No model checkpoint at {model_path} – using mock data.")
 
     # 3. LLM engine -------------------------------------------------------
     try:
