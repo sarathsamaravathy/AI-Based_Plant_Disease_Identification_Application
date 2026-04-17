@@ -51,7 +51,8 @@ ollama pull llama2  # or any supported model
 
 ```bash
 ollama serve
-or ollama run llama3
+or if its already running ->
+ollama run llama3
 ```
 
 ### Step 4: Backend Setup
