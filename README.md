@@ -90,6 +90,7 @@ ollama run llama3
    > ```bash
    > python -m pip install "setuptools<80.10.3"
    >  ```
+ Install requirements
    > ```bash
    > python -m pip install --prefer-binary -r requirements.txt
    > ```
