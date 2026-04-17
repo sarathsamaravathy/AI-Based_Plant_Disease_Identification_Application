@@ -54,6 +54,14 @@ docker compose up --build
 
 This starts backend, frontend, PostgreSQL, Ollama, and MLflow in containers.
 
+If you are updating an existing clone (recommended after fixes), run this sequence:
+
+```bash
+git pull
+docker compose build --no-cache --progress=plain api frontend
+docker compose up --build
+```
+
 ### Step 3: Pull the LLM model inside Ollama container (first run only)
 
 ```bash
