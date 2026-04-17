@@ -29,6 +29,8 @@ https://git-scm.com/install/windows (Git installation)
 
 ```bash
 git clone https://github.com/sarathsamaravathy/AI-Based_Plant_Disease_Identification_Application.git
+```
+```bash
 cd AI-Based_Plant_Disease_Identification_Application
 ```
 
