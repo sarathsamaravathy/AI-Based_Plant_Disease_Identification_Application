@@ -73,20 +73,32 @@ The system supports multiple Indian languages in UI and result content:\par
 \par
 \pard\b 5. Step-by-Step: How to Add a Trained Model to This App\b0\par
 \par
-\pard\b Step 1: Train and export checkpoint\b0\par
-Train your classifier externally (for example on PlantVillage classes) and save a PyTorch checkpoint using the same architecture family expected by VisionModel.\par
-The checkpoint should include model_state, model_name, and num_classes.\par
+\pard\b Step 1: Put PlantVillage data in the project\b0\par
+Download the PlantVillage dataset and place it in a local folder such as:\par
+- data/raw/PlantVillage/\par
+The script supports either of these layouts:\par
+- data/raw/PlantVillage/train/<class_name>/... and data/raw/PlantVillage/val/<class_name>/...\par
+- data/raw/PlantVillage/<class_name>/... for automatic 80/20 split\par
 \par
-\pard\b Step 2: Place checkpoint in project\b0\par
-Create folder if needed:\par
-- models/vision/\par
-Copy your file, example:\par
+\pard\b Step 2: Run one command to train and export the checkpoint\b0\par
+From the project root, run:\par
+- python scripts/train_plant_disease.py --data-dir data/raw/PlantVillage\par
+This command trains a classifier and exports a backend-compatible checkpoint to:\par
 - models/vision/plant_disease.pt\par
+The exported file includes:\par
+- model_state\par
+- model_name\par
+- num_classes\par
+- class_names\par
 \par
-\pard\b Step 3: Configure environment\b0\par
-Set environment variable in .env:\par
+\pard\b Step 3: Share and confirm environment settings\b0\par
+The .env file is now tracked in the repository so other users can pull the repo and use the same configuration directly.\par
+Confirm these values in .env:\par
 - VISION_MODEL_PATH=./models/vision/plant_disease.pt\par
-Optionally set:\par
+- LLM_API_URL=http://localhost:11434\par
+- LLM_MODEL=llama3 or llama2\par
+- DATABASE_URL=postgresql://...\par
+Optionally set the backbone:\par
 - VISION_MODEL=efficientnet_v2_s\par
 \par
 \pard\b Step 4: Start backend\b0\par
@@ -104,9 +116,6 @@ Check response field pipeline_mode:\par
 Ensure Ollama is running and model is pulled:\par
 - ollama pull llama3\par
 - ollama serve\par
-Set in .env if needed:\par
-- LLM_API_URL=http://localhost:11434\par
-- LLM_MODEL=llama3\par
 Then restart backend.\par
 \par
 \pard\b Step 7: Validate end-to-end\b0\par
@@ -130,8 +139,11 @@ MLOps is implemented as a practical loop:\par
 5. New checkpoint is deployed and monitored again.\par
 \par
 \pard\b 7. Key Files\b0\par
+- .env\par
+- .gitignore\par
 - src/api/main.py\par
 - src/vision/model.py\par
+- scripts/train_plant_disease.py\par
 - src/llm/engine.py\par
 - src/database/models.py\par
 - frontend/src/services/api.js\par

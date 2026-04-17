@@ -59,12 +59,14 @@ class VisionModel:
         model_name: str = "efficientnet_v2_s",
         num_classes: int = 38,
         pretrained: bool = True,
-        device: Optional[str] = None
+        device: Optional[str] = None,
+        class_names: Optional[list[str]] = None,
     ):
         """Initialize vision model."""
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.model_name = model_name
         self.num_classes = num_classes
+        self.class_names = class_names or DISEASE_CLASSES[:num_classes]
         
         self.model = self._load_model(model_name, num_classes, pretrained)
         self.model.to(self.device)
@@ -111,7 +113,8 @@ class VisionModel:
         torch.save({
             'model_state': self.model.state_dict(),
             'model_name': self.model_name,
-            'num_classes': self.num_classes
+            'num_classes': self.num_classes,
+            'class_names': self.class_names,
         }, path)
         logger.info(f"Model saved to {path}")
 
@@ -135,6 +138,7 @@ class VisionModel:
             model_name=checkpoint["model_name"],
             num_classes=checkpoint["num_classes"],
             pretrained=False,
+            class_names=checkpoint.get("class_names"),
         )
         instance.model.load_state_dict(checkpoint["model_state"])
         instance.model.eval()
@@ -161,5 +165,6 @@ class VisionModel:
         _, probs = self.predict(tensor)
         top_idx = probs.argmax(dim=1).item()
         confidence = probs[0, top_idx].item()
-        disease_name = DISEASE_CLASSES[top_idx] if top_idx < len(DISEASE_CLASSES) else "unknown"
+        labels = self.class_names or DISEASE_CLASSES
+        disease_name = labels[top_idx] if top_idx < len(labels) else "unknown"
         return disease_name, confidence
