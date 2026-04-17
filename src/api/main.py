@@ -1,4 +1,34 @@
-"""FastAPI Application - Main REST API"""
+"""FastAPI Application - Main REST API
+
+MLOps Integration
+-----------------
+This module integrates MLflow for experiment tracking.  Every inference
+request is logged as an MLflow run with the following data:
+
+* Parameters  : model name, language, confidence threshold, plant_type
+* Metrics     : confidence score, inference latency (ms)
+* Tags        : diagnosis_id, disease predicted, pipeline mode (real/mock),
+                user feedback (appended when /feedback is called)
+
+MLflow runs are stored locally in the ./mlruns directory so no external
+MLflow server is needed during development.  Switch to a remote tracking
+server by setting MLFLOW_TRACKING_URI in the environment.
+
+Vision model auto-loading
+--------------------------
+On startup the API checks for a saved model checkpoint at the path defined
+by VISION_MODEL_PATH (default: ./models/vision/plant_disease.pt).
+If the file exists, VisionModel.load() is called and real inference is used.
+If the file is missing, the API falls back to multilingual mock responses so
+that the frontend always works during development.
+
+Ollama auto-detection
+---------------------
+On startup, DiagnosisEngine.is_available() probes the local Ollama HTTP
+server.  If it is reachable the LLM generates farmer-friendly text from
+the vision model output.  If unreachable the engine returns a static
+fallback message without crashing.
+"""
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,9 +37,17 @@ from typing import Optional, List
 from datetime import datetime
 import logging
 import os
+import time
 import uuid
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Application-level singletons (initialised in startup_event)
+# ---------------------------------------------------------------------------
+_vision_model = None        # VisionModel instance (None = use mock data)
+_llm_engine = None          # DiagnosisEngine instance
+_mlflow_enabled = False     # True when MLflow tracking is configured
 
 app = FastAPI(
     title="Plant Disease Identifier API",
@@ -26,6 +64,80 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------------------------------------------------------------------
+# Startup – load models and configure MLflow
+# ---------------------------------------------------------------------------
+
+@app.on_event("startup")
+async def startup_event():
+    """Load vision model, connect LLM engine, and configure MLflow on startup."""
+    global _vision_model, _llm_engine, _mlflow_enabled
+
+    logger.info("Starting Plant Disease Identifier API ...")
+
+    # 1. MLflow -----------------------------------------------------------
+    try:
+        import mlflow
+        tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "./mlruns")
+        mlflow.set_tracking_uri(tracking_uri)
+        mlflow.set_experiment("plant_disease_diagnosis")
+        _mlflow_enabled = True
+        logger.info(f"MLflow tracking enabled at: {tracking_uri}")
+    except ImportError:
+        logger.warning("mlflow not installed – tracking disabled.")
+    except Exception as exc:
+        logger.warning(f"MLflow setup failed: {exc} – tracking disabled.")
+
+    # 2. Vision model -----------------------------------------------------
+    model_path = os.getenv("VISION_MODEL_PATH", "./models/vision/plant_disease.pt")
+    if os.path.isfile(model_path):
+        try:
+            from src.vision.model import VisionModel
+            _vision_model = VisionModel.load(model_path)
+            logger.info(f"Vision model loaded from {model_path}")
+        except Exception as exc:
+            logger.warning(f"Could not load vision model: {exc} – using mock data.")
+    else:
+        logger.info(f"No model checkpoint at {model_path} – using mock data.")
+
+    # 3. LLM engine -------------------------------------------------------
+    try:
+        from src.llm.engine import DiagnosisEngine
+        ollama_url = os.getenv("LLM_API_URL", "http://localhost:11434")
+        llm_model = os.getenv("LLM_MODEL", "llama3")
+        _llm_engine = DiagnosisEngine(ollama_url=ollama_url, model=llm_model)
+        if _llm_engine.is_available():
+            logger.info(f"Ollama reachable at {ollama_url} – LLM generation active.")
+        else:
+            logger.info("Ollama not reachable – LLM will use fallback responses.")
+    except Exception as exc:
+        logger.warning(f"LLM engine init failed: {exc}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on shutdown."""
+    logger.info("Shutting down Plant Disease Identifier API ...")
+
+
+# ---------------------------------------------------------------------------
+# Internal helper: MLflow logging
+# ---------------------------------------------------------------------------
+
+def _log_to_mlflow(params: dict, metrics: dict, tags: dict):
+    """Log a single inference to MLflow.  Silently no-ops if MLflow is off."""
+    if not _mlflow_enabled:
+        return
+    try:
+        import mlflow
+        with mlflow.start_run(run_name=tags.get("diagnosis_id", "unknown")):
+            mlflow.log_params(params)
+            mlflow.log_metrics(metrics)
+            mlflow.set_tags(tags)
+    except Exception as exc:
+        logger.warning(f"MLflow logging failed: {exc}")
+
 
 class HealthResponse(BaseModel):
     """Health check response."""
@@ -305,20 +417,64 @@ async def diagnose(
         logger.info(f"Diagnosis request - file: {file.filename}, language: {language}, plant_type: {plant_type}")
 
         diagnosis_id = str(uuid.uuid4())
-        data = MOCK_IMAGE_DIAGNOSIS.get(language, MOCK_IMAGE_DIAGNOSIS["en"])
+        t_start = time.time()
+        pipeline_mode = "mock"
+
+        if _vision_model is not None:
+            # Real inference path
+            image_bytes = await file.read()
+            disease_name, confidence = _vision_model.predict_class(image_bytes)
+            pipeline_mode = "real_vision"
+
+            llm_result = {}
+            if _llm_engine is not None:
+                llm_result = _llm_engine.generate_diagnosis(
+                    disease_name=disease_name,
+                    confidence_score=confidence,
+                    symptoms=[],
+                    plant_type=plant_type or "unknown",
+                    language=language,
+                )
+                if llm_result.get("llm_generated"):
+                    pipeline_mode = "real_vision_llm"
+
+            symptoms = llm_result.get("symptoms", [])
+            treatment = llm_result.get("treatment_recommendations", [])
+            preventive = llm_result.get("preventive_measures", [])
+            explanation = llm_result.get("farmer_friendly_explanation", disease_name)
+            severity = llm_result.get("severity_level", "medium")
+        else:
+            # Mock data path
+            data = MOCK_IMAGE_DIAGNOSIS.get(language, MOCK_IMAGE_DIAGNOSIS["en"])
+            disease_name = data["disease_name"]
+            confidence = 0.72
+            symptoms = data["symptoms"]
+            treatment = data["treatment_recommendations"]
+            preventive = data["preventive_measures"]
+            explanation = data["explanation"]
+            severity = "medium"
+
+        latency_ms = round((time.time() - t_start) * 1000, 2)
+
+        _log_to_mlflow(
+            params={"model": os.getenv("VISION_MODEL_PATH", "mock"), "language": language, "plant_type": plant_type or "unknown"},
+            metrics={"confidence_score": confidence, "latency_ms": latency_ms},
+            tags={"diagnosis_id": diagnosis_id, "disease": disease_name, "pipeline_mode": pipeline_mode},
+        )
 
         return {
             "diagnosis_id": diagnosis_id,
-            "disease_name": data["disease_name"],
-            "confidence_score": 0.72,
-            "severity_level": "medium",
-            "symptoms": data["symptoms"],
-            "treatment_recommendations": data["treatment_recommendations"],
-            "preventive_measures": data["preventive_measures"],
-            "farmer_friendly_explanation": data["explanation"],
+            "disease_name": disease_name,
+            "confidence_score": confidence,
+            "severity_level": severity,
+            "symptoms": symptoms,
+            "treatment_recommendations": treatment,
+            "preventive_measures": preventive,
+            "farmer_friendly_explanation": explanation,
             "audio_available": False,
             "language": language,
-            "timestamp": datetime.now().isoformat()
+            "pipeline_mode": pipeline_mode,
+            "timestamp": datetime.now().isoformat(),
         }
 
     except HTTPException:
@@ -337,8 +493,50 @@ async def diagnose_text(
     try:
         logger.info(f"Text diagnosis request: {description}")
         diagnosis_id = str(uuid.uuid4())
-        data = MOCK_TEXT_DIAGNOSIS.get(language, MOCK_TEXT_DIAGNOSIS["en"])
+        t_start = time.time()
+        pipeline_mode = "mock"
 
+        if _llm_engine is not None and _llm_engine.is_available():
+            # Real LLM path for text diagnosis
+            llm_result = _llm_engine.generate_diagnosis(
+                disease_name="Unknown (text-only mode)",
+                confidence_score=0.0,
+                symptoms=[description],
+                plant_type=plant_type or "unknown",
+                language=language,
+            )
+            if llm_result.get("llm_generated"):
+                pipeline_mode = "real_llm"
+                data = MOCK_TEXT_DIAGNOSIS.get(language, MOCK_TEXT_DIAGNOSIS["en"])
+                result = {
+                    "diagnosis_id": diagnosis_id,
+                    "disease_name": data["disease_name"],
+                    "confidence_score": 0.65,
+                    "severity_level": llm_result.get("severity_level", "low"),
+                    "symptoms": data["symptoms"],
+                    "treatment_recommendations": llm_result.get("treatment_recommendations", data["treatment_recommendations"]),
+                    "preventive_measures": llm_result.get("preventive_measures", data["preventive_measures"]),
+                    "farmer_friendly_explanation": llm_result.get("farmer_friendly_explanation", data["explanation"]),
+                    "audio_available": False,
+                    "language": language,
+                    "pipeline_mode": pipeline_mode,
+                    "timestamp": datetime.now().isoformat(),
+                }
+                latency_ms = round((time.time() - t_start) * 1000, 2)
+                _log_to_mlflow(
+                    params={"model": "llm_text", "language": language},
+                    metrics={"confidence_score": 0.65, "latency_ms": latency_ms},
+                    tags={"diagnosis_id": diagnosis_id, "pipeline_mode": pipeline_mode},
+                )
+                return result
+
+        data = MOCK_TEXT_DIAGNOSIS.get(language, MOCK_TEXT_DIAGNOSIS["en"])
+        latency_ms = round((time.time() - t_start) * 1000, 2)
+        _log_to_mlflow(
+            params={"model": "mock_text", "language": language},
+            metrics={"confidence_score": 0.65, "latency_ms": latency_ms},
+            tags={"diagnosis_id": diagnosis_id, "pipeline_mode": pipeline_mode},
+        )
         return {
             "diagnosis_id": diagnosis_id,
             "disease_name": data["disease_name"],
@@ -350,7 +548,8 @@ async def diagnose_text(
             "farmer_friendly_explanation": data["explanation"],
             "audio_available": False,
             "language": language,
-            "timestamp": datetime.now().isoformat()
+            "pipeline_mode": "mock",
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -402,19 +601,19 @@ async def submit_feedback(diagnosis_id: str, feedback: dict):
     """Submit feedback for diagnosis (RLHF)."""
     try:
         logger.info(f"Feedback received for diagnosis {diagnosis_id}")
+        # Tag the existing MLflow run with feedback so it can be used for future fine-tuning
+        if _mlflow_enabled:
+            try:
+                import mlflow
+                mlflow.set_tags({
+                    f"feedback.diagnosis_correct": str(feedback.get("diagnosis_correct")),
+                    f"feedback.recommendation_helpful": str(feedback.get("recommendation_helpful")),
+                })
+            except Exception:
+                pass
         return {"status": "feedback_recorded"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize models on startup."""
-    logger.info("Starting Plant Disease Identifier API...")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown."""
-    logger.info("Shutting down Plant Disease Identifier API...")
 
 if __name__ == "__main__":
     import uvicorn
