@@ -24,7 +24,7 @@ Before installing, ensure you have the following:
 - **Docker & Docker Compose** (optional, for containerized deployment)
 
 ## Installation
-
+https://git-scm.com/install/windows (Git installation)
 ### Step 1: Clone the Repository
 
 ```bash
