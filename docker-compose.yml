@@ -44,7 +44,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_BASE=http://localhost:8000/api/v1
+        - VITE_API_BASE=/api/v1
     container_name: plant-disease-frontend
     restart: unless-stopped
     ports:

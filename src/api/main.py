@@ -37,6 +37,7 @@ from typing import Optional, List
 from datetime import datetime
 import logging
 import os
+import re
 import time
 import uuid
 
@@ -412,6 +413,35 @@ MOCK_TEXT_DIAGNOSIS = {
 }
 
 
+def _looks_english_for_localized_output(value: str, language: str) -> bool:
+    """Return True when a non-English request appears to contain plain English text."""
+    if language == "en" or not value:
+        return False
+
+    letters_only = re.sub(r"[^A-Za-z]", "", value)
+    if not letters_only:
+        return False
+
+    return all(ord(char) < 128 for char in value)
+
+
+def _prefer_localized_text(value: str, fallback: str, language: str) -> str:
+    if not value or _looks_english_for_localized_output(value, language):
+        return fallback
+    return value
+
+
+def _prefer_localized_list(values: List[str], fallback: List[str], language: str) -> List[str]:
+    if not values:
+        return fallback
+
+    joined = " ".join(values)
+    if _looks_english_for_localized_output(joined, language):
+        return fallback
+
+    return values
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
@@ -456,16 +486,30 @@ async def diagnose(
                 if llm_result.get("llm_generated"):
                     pipeline_mode = "real_vision_llm"
 
-            # Use LLM-localized disease name; fall back to English class name
-            disease_name = llm_result.get("disease_name_localized") or disease_name_en
-
             # Keep details in the selected language even if LLM is unavailable
             # or returns incomplete content.
             localized = MOCK_IMAGE_DIAGNOSIS.get(language, MOCK_IMAGE_DIAGNOSIS["en"])
-            symptoms = llm_result.get("symptoms") or localized["symptoms"]
-            treatment = llm_result.get("treatment_recommendations") or localized["treatment_recommendations"]
-            preventive = llm_result.get("preventive_measures") or localized["preventive_measures"]
-            explanation = llm_result.get("farmer_friendly_explanation") or localized["explanation"]
+            disease_name = _prefer_localized_text(
+                llm_result.get("disease_name_localized", ""),
+                localized["disease_name"],
+                language,
+            ) or disease_name_en
+            symptoms = _prefer_localized_list(llm_result.get("symptoms", []), localized["symptoms"], language)
+            treatment = _prefer_localized_list(
+                llm_result.get("treatment_recommendations", []),
+                localized["treatment_recommendations"],
+                language,
+            )
+            preventive = _prefer_localized_list(
+                llm_result.get("preventive_measures", []),
+                localized["preventive_measures"],
+                language,
+            )
+            explanation = _prefer_localized_text(
+                llm_result.get("farmer_friendly_explanation", ""),
+                localized["explanation"],
+                language,
+            )
             severity = llm_result.get("severity_level", "medium")
         else:
             # Mock data path
@@ -540,9 +584,21 @@ async def diagnose_text(
                     "confidence_score": 0.65,
                     "severity_level": llm_result.get("severity_level", "low"),
                     "symptoms": data["symptoms"],
-                    "treatment_recommendations": llm_result.get("treatment_recommendations", data["treatment_recommendations"]),
-                    "preventive_measures": llm_result.get("preventive_measures", data["preventive_measures"]),
-                    "farmer_friendly_explanation": llm_result.get("farmer_friendly_explanation", data["explanation"]),
+                    "treatment_recommendations": _prefer_localized_list(
+                        llm_result.get("treatment_recommendations", []),
+                        data["treatment_recommendations"],
+                        language,
+                    ),
+                    "preventive_measures": _prefer_localized_list(
+                        llm_result.get("preventive_measures", []),
+                        data["preventive_measures"],
+                        language,
+                    ),
+                    "farmer_friendly_explanation": _prefer_localized_text(
+                        llm_result.get("farmer_friendly_explanation", ""),
+                        data["explanation"],
+                        language,
+                    ),
                     "audio_available": False,
                     "language": language,
                     "pipeline_mode": pipeline_mode,
@@ -614,14 +670,30 @@ async def retranslate_diagnosis(
         if llm_result.get("llm_generated"):
             localized = MOCK_IMAGE_DIAGNOSIS.get(language, MOCK_IMAGE_DIAGNOSIS["en"])
             return {
-                "disease_name": llm_result.get("disease_name_localized") or disease_name_en,
+                "disease_name": _prefer_localized_text(
+                    llm_result.get("disease_name_localized", ""),
+                    localized["disease_name"],
+                    language,
+                ) or disease_name_en,
                 "disease_name_en": disease_name_en,
                 "confidence_score": confidence,
                 "severity_level": llm_result.get("severity_level", severity),
-                "symptoms": llm_result.get("symptoms") or localized["symptoms"],
-                "treatment_recommendations": llm_result.get("treatment_recommendations") or localized["treatment_recommendations"],
-                "preventive_measures": llm_result.get("preventive_measures") or localized["preventive_measures"],
-                "farmer_friendly_explanation": llm_result.get("farmer_friendly_explanation") or localized["explanation"],
+                "symptoms": _prefer_localized_list(llm_result.get("symptoms", []), localized["symptoms"], language),
+                "treatment_recommendations": _prefer_localized_list(
+                    llm_result.get("treatment_recommendations", []),
+                    localized["treatment_recommendations"],
+                    language,
+                ),
+                "preventive_measures": _prefer_localized_list(
+                    llm_result.get("preventive_measures", []),
+                    localized["preventive_measures"],
+                    language,
+                ),
+                "farmer_friendly_explanation": _prefer_localized_text(
+                    llm_result.get("farmer_friendly_explanation", ""),
+                    localized["explanation"],
+                    language,
+                ),
                 "audio_available": False,
                 "language": language,
             }
