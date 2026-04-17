@@ -1,11 +1,17 @@
 <template>
   <footer class="footer">
     <div class="footer-content">
-      <p>&copy; 2026 Vector Visionaries. Plant Disease Identifier - Open Source Project</p>
-      <p>Empowering farmers with AI-driven disease diagnosis in local languages</p>
+      <p>&copy; 2026 Vector Visionaries. {{ t('footer.line1') }}</p>
+      <p>{{ t('footer.line2') }}</p>
     </div>
   </footer>
 </template>
+
+<script setup>
+import { useI18n } from '../i18n/useI18n'
+
+const { t } = useI18n()
+</script>
 
 <style scoped>
 .footer {

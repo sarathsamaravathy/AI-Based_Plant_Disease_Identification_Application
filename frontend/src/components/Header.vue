@@ -2,20 +2,31 @@
   <header class="header">
     <div class="header-container">
       <div class="logo">
-        <h1>🌱 Plant Disease Identifier</h1>
-        <p>Multilingual AI-Powered Diagnosis</p>
+        <h1>🌱 {{ t('app.title') }}</h1>
+        <p>{{ t('app.subtitle') }}</p>
       </div>
       <nav class="nav">
-        <RouterLink to="/" class="nav-link">Home</RouterLink>
-        <RouterLink to="/diagnose" class="nav-link">Diagnose</RouterLink>
-        <RouterLink to="/history" class="nav-link">History</RouterLink>
+        <RouterLink to="/" class="nav-link">{{ t('nav.home') }}</RouterLink>
+        <RouterLink to="/diagnose" class="nav-link">{{ t('nav.diagnose') }}</RouterLink>
+        <RouterLink to="/history" class="nav-link">{{ t('nav.history') }}</RouterLink>
       </nav>
+      <div class="lang-switcher">
+        <label for="global-language">{{ t('app.language') }}</label>
+        <select id="global-language" v-model="language">
+          <option v-for="option in languageOptions" :key="option.code" :value="option.code">
+            {{ option.nativeName }}
+          </option>
+        </select>
+      </div>
     </div>
   </header>
 </template>
 
 <script setup>
 import { RouterLink } from 'vue-router'
+import { useI18n } from '../i18n/useI18n'
+
+const { t, language, languageOptions } = useI18n()
 </script>
 
 <style scoped>
@@ -64,6 +75,25 @@ import { RouterLink } from 'vue-router'
 .nav-link.router-link-active {
   border-bottom: 2px solid white;
   padding-bottom: 5px;
+}
+
+.lang-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.lang-switcher select {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.lang-switcher select option {
+  color: #222;
 }
 
 @media (max-width: 768px) {

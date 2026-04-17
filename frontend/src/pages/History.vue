@@ -1,29 +1,29 @@
 <template>
   <div class="history-container">
     <div class="history-card">
-      <h2>Diagnosis History</h2>
-      <p class="subtitle">View your past diagnoses and feedback</p>
+      <h2>{{ t('history.title') }}</h2>
+      <p class="subtitle">{{ t('history.subtitle') }}</p>
 
       <div v-if="diagnoses.length > 0" class="history-list">
         <div v-for="diagnosis in diagnoses" :key="diagnosis.id" class="history-item">
           <div class="history-header">
             <h4>{{ diagnosis.disease_name }}</h4>
             <span :class="['severity-badge', diagnosis.severity_level]">
-              {{ diagnosis.severity_level }}
+              {{ formatSeverity(diagnosis.severity_level) }}
             </span>
           </div>
           <p class="date">{{ formatDate(diagnosis.created_at) }}</p>
-          <p class="language">Language: {{ getLanguageName(diagnosis.target_language) }}</p>
-          <p class="confidence">Confidence: {{ (diagnosis.confidence_score * 100).toFixed(1) }}%</p>
+          <p class="language">{{ t('history.language') }}: {{ getLanguageName(diagnosis.target_language) }}</p>
+          <p class="confidence">{{ t('history.confidence') }}: {{ (diagnosis.confidence_score * 100).toFixed(1) }}%</p>
           <div class="history-actions">
-            <RouterLink :to="`/results/${diagnosis.id}`" class="link">View Details →</RouterLink>
+            <RouterLink :to="`/results/${diagnosis.id}`" class="link">{{ t('history.viewDetails') }} →</RouterLink>
           </div>
         </div>
       </div>
 
       <div v-else class="no-history">
-        <p>No diagnoses yet. Start by creating a new diagnosis!</p>
-        <RouterLink to="/diagnose" class="btn btn-primary">+ New Diagnosis</RouterLink>
+        <p>{{ t('history.noHistory') }}</p>
+        <RouterLink to="/diagnose" class="btn btn-primary">+ {{ t('history.newDiagnosis') }}</RouterLink>
       </div>
     </div>
   </div>
@@ -32,6 +32,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useI18n } from '../i18n/useI18n'
+
+const { t } = useI18n()
 
 const diagnoses = ref([
   {
@@ -80,6 +83,11 @@ const formatDate = (dateString) => {
 
 const getLanguageName = (code) => {
   return languages[code] || code
+}
+
+const formatSeverity = (severityLevel) => {
+  const key = String(severityLevel || '').toLowerCase()
+  return t(`history.severity.${key}`)
 }
 </script>
 

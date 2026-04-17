@@ -1,7 +1,7 @@
 <template>
   <div class="results-container">
     <div class="results-card">
-      <h2>Diagnosis Results</h2>
+      <h2>{{ t('results.title') }}</h2>
       
       <div v-if="diagnosis" class="diagnosis-results">
         <!-- Disease Info -->
@@ -9,11 +9,11 @@
           <div class="disease-header">
             <h3>{{ diagnosis.disease_name }}</h3>
             <span :class="['severity-badge', diagnosis.severity_level]">
-              {{ diagnosis.severity_level.toUpperCase() }}
+              {{ formatSeverity(diagnosis.severity_level) }}
             </span>
           </div>
           <div class="confidence">
-            <span>Confidence: {{ (diagnosis.confidence_score * 100).toFixed(1) }}%</span>
+            <span>{{ t('results.confidence') }}: {{ (diagnosis.confidence_score * 100).toFixed(1) }}%</span>
             <div class="progress-bar">
               <div class="progress-fill" :style="{ width: (diagnosis.confidence_score * 100) + '%' }"></div>
             </div>
@@ -22,7 +22,7 @@
 
         <!-- Symptoms -->
         <div v-if="diagnosis.symptoms" class="section">
-          <h4>🔍 Symptoms Detected</h4>
+          <h4>🔍 {{ t('results.symptomsDetected') }}</h4>
           <ul class="symptom-list">
             <li v-for="(symptom, idx) in diagnosis.symptoms" :key="idx">{{ symptom }}</li>
           </ul>
@@ -30,7 +30,7 @@
 
         <!-- Treatment Recommendations -->
         <div class="section">
-          <h4>💊 Treatment Recommendations</h4>
+          <h4>💊 {{ t('results.treatmentRecommendations') }}</h4>
           <ol class="recommendation-list">
             <li v-for="(rec, idx) in diagnosis.treatment_recommendations" :key="idx">
               {{ rec }}
@@ -40,7 +40,7 @@
 
         <!-- Preventive Measures -->
         <div class="section">
-          <h4>🛡️ Preventive Measures</h4>
+          <h4>🛡️ {{ t('results.preventiveMeasures') }}</h4>
           <ul class="prevention-list">
             <li v-for="(prev, idx) in diagnosis.preventive_measures" :key="idx">
               {{ prev }}
@@ -50,62 +50,62 @@
 
         <!-- Farmer Explanation -->
         <div class="explanation">
-          <h4>📖 Farmer-Friendly Explanation</h4>
+          <h4>📖 {{ t('results.explanation') }}</h4>
           <p>{{ diagnosis.farmer_friendly_explanation }}</p>
         </div>
 
         <!-- Audio -->
         <div v-if="diagnosis.audio_available" class="audio-section">
-          <h4>🔊 Audio Output</h4>
-          <button @click="playAudio" class="btn-audio">▶️ Play Audio</button>
+          <h4>🔊 {{ t('results.audioOutput') }}</h4>
+          <button @click="playAudio" class="btn-audio">▶️ {{ t('results.playAudio') }}</button>
         </div>
 
         <!-- Feedback Form -->
         <div class="feedback-section">
-          <h4>📝 Was this diagnosis helpful?</h4>
+          <h4>📝 {{ t('results.helpfulQuestion') }}</h4>
           <div class="feedback-form">
             <div class="feedback-group">
               <label>
                 <input type="radio" v-model="feedback.diagnosis_correct" :value="true" />
-                Diagnosis is correct
+                {{ t('results.diagnosisCorrect') }}
               </label>
               <label>
                 <input type="radio" v-model="feedback.diagnosis_correct" :value="false" />
-                Diagnosis is incorrect
+                {{ t('results.diagnosisIncorrect') }}
               </label>
             </div>
 
             <div class="feedback-group">
               <label>
                 <input type="radio" v-model="feedback.recommendation_helpful" :value="true" />
-                Recommendations helpful
+                {{ t('results.recommendationHelpful') }}
               </label>
               <label>
                 <input type="radio" v-model="feedback.recommendation_helpful" :value="false" />
-                Recommendations not helpful
+                {{ t('results.recommendationNotHelpful') }}
               </label>
             </div>
 
             <div class="form-group">
-              <label>Additional Notes:</label>
-              <textarea v-model="feedback.user_notes" placeholder="Any additional feedback..." rows="3"></textarea>
+              <label>{{ t('results.additionalNotes') }}:</label>
+              <textarea v-model="feedback.user_notes" :placeholder="t('results.additionalNotesPlaceholder')" rows="3"></textarea>
             </div>
 
             <button @click="submitFeedback" :disabled="feedbackLoading" class="btn btn-primary">
-              {{ feedbackLoading ? '⏳ Submitting...' : '✓ Submit Feedback' }}
+              {{ feedbackLoading ? `⏳ ${t('results.submitting')}` : `✓ ${t('results.submitFeedback')}` }}
             </button>
           </div>
         </div>
 
         <!-- Actions -->
         <div class="actions">
-          <RouterLink to="/diagnose" class="btn btn-secondary">↶ New Diagnosis</RouterLink>
-          <RouterLink to="/history" class="btn btn-secondary">📋 View History</RouterLink>
+          <RouterLink to="/diagnose" class="btn btn-secondary">↶ {{ t('results.newDiagnosis') }}</RouterLink>
+          <RouterLink to="/history" class="btn btn-secondary">📋 {{ t('results.viewHistory') }}</RouterLink>
         </div>
       </div>
 
       <div v-else class="loading">
-        ⏳ Loading results...
+        ⏳ {{ t('results.loading') }}
       </div>
     </div>
   </div>
@@ -115,8 +115,10 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { diagnosisService } from '../services/api'
+import { useI18n } from '../i18n/useI18n'
 
 const route = useRoute()
+const { t } = useI18n()
 const diagnosis = ref(route.query)
 const feedbackLoading = ref(false)
 const feedback = ref({
@@ -131,24 +133,29 @@ onMounted(() => {
 })
 
 const playAudio = () => {
-  alert('Audio playback would be implemented here')
+  alert(t('results.audioNotImplemented'))
 }
 
 const submitFeedback = async () => {
   feedbackLoading.value = true
   try {
     await diagnosisService.submitFeedback(route.params.id, feedback.value)
-    alert('✓ Feedback submitted successfully!')
+    alert(`✓ ${t('results.feedbackSuccess')}`)
     feedback.value = {
       diagnosis_correct: null,
       recommendation_helpful: null,
       user_notes: '',
     }
   } catch (err) {
-    alert('Error submitting feedback: ' + err.message)
+    alert(`${t('results.feedbackError')}: ${err.message}`)
   } finally {
     feedbackLoading.value = false
   }
+}
+
+const formatSeverity = (severityLevel) => {
+  const key = String(severityLevel || '').toLowerCase()
+  return t(`results.severity.${key}`)
 }
 </script>
 

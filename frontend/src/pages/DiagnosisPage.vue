@@ -1,7 +1,7 @@
 <template>
   <div class="diagnosis-container">
     <div class="diagnosis-card">
-      <h2>Plant Disease Diagnosis</h2>
+      <h2>{{ t('diagnosis.title') }}</h2>
       
       <div class="tabs">
         <button
@@ -10,24 +10,18 @@
           :class="['tab', { active: activeTab === tab }]"
           @click="activeTab = tab"
         >
-          {{ tab === 'image' ? '📸 Upload Image' : '📝 Describe Symptoms' }}
+          {{ tab === 'image' ? `📸 ${t('diagnosis.uploadImageTab')}` : `📝 ${t('diagnosis.describeSymptomsTab')}` }}
         </button>
       </div>
 
       <!-- Image Upload Tab -->
       <div v-if="activeTab === 'image'" class="tab-content">
         <div class="language-selector">
-          <label>Output Language:</label>
+          <label>{{ t('diagnosis.outputLanguage') }}:</label>
           <select v-model="selectedLanguage">
-            <option value="en">English</option>
-            <option value="hi">हिन्दी (Hindi)</option>
-            <option value="ta">தமிழ் (Tamil)</option>
-            <option value="te">తెలుగు (Telugu)</option>
-            <option value="ka">ಕನ್ನಡ (Kannada)</option>
-            <option value="ml">മലയാളം (Malayalam)</option>
-            <option value="mr">मराठी (Marathi)</option>
-            <option value="gu">ગુજરાતી (Gujarati)</option>
-            <option value="bn">বাঙ্গালী (Bengali)</option>
+            <option v-for="option in languageOptions" :key="option.code" :value="option.code">
+              {{ option.nativeName }}
+            </option>
           </select>
         </div>
 
@@ -40,7 +34,7 @@
             class="file-input"
           />
           <label for="file-input" class="upload-label">
-            <span v-if="!selectedFile">Click to upload or drag image here</span>
+            <span v-if="!selectedFile">{{ t('diagnosis.uploadPrompt') }}</span>
             <span v-else>{{ selectedFile.name }}</span>
           </label>
         </div>
@@ -50,46 +44,44 @@
         </div>
 
         <div class="form-group">
-          <label>Plant Type (optional):</label>
-          <input v-model="plantType" type="text" placeholder="e.g., rice, wheat, tomato" />
+          <label>{{ t('diagnosis.plantType') }}:</label>
+          <input v-model="plantType" type="text" :placeholder="t('diagnosis.plantTypePlaceholder')" />
         </div>
 
         <button @click="diagnoseImage" :disabled="!selectedFile || loading" class="btn btn-primary">
-          <span v-if="!loading">🔍 Analyze Image</span>
-          <span v-else>⏳ Analyzing...</span>
+          <span v-if="!loading">🔍 {{ t('diagnosis.analyzeImage') }}</span>
+          <span v-else>⏳ {{ t('diagnosis.analyzing') }}</span>
         </button>
       </div>
 
       <!-- Text Tab -->
       <div v-if="activeTab === 'text'" class="tab-content">
         <div class="language-selector">
-          <label>Output Language:</label>
+          <label>{{ t('diagnosis.outputLanguage') }}:</label>
           <select v-model="selectedLanguage">
-            <option value="en">English</option>
-            <option value="hi">हिन्दी (Hindi)</option>
-            <option value="ta">தமிழ் (Tamil)</option>
-            <option value="te">తెలుగు (Telugu)</option>
-            <option value="ka">ಕನ್ನಡ (Kannada)</option>
+            <option v-for="option in languageOptions" :key="option.code" :value="option.code">
+              {{ option.nativeName }}
+            </option>
           </select>
         </div>
 
         <div class="form-group">
-          <label>Describe Symptoms:</label>
+          <label>{{ t('diagnosis.describeSymptoms') }}:</label>
           <textarea
             v-model="symptoms"
-            placeholder="Describe the symptoms you observe on the plant..."
+            :placeholder="t('diagnosis.symptomsPlaceholder')"
             rows="5"
           ></textarea>
         </div>
 
         <div class="form-group">
-          <label>Plant Type (optional):</label>
-          <input v-model="plantType" type="text" placeholder="e.g., rice, wheat, tomato" />
+          <label>{{ t('diagnosis.plantType') }}:</label>
+          <input v-model="plantType" type="text" :placeholder="t('diagnosis.plantTypePlaceholder')" />
         </div>
 
         <button @click="diagnoseText" :disabled="!symptoms || loading" class="btn btn-primary">
-          <span v-if="!loading">🔍 Get Diagnosis</span>
-          <span v-else>⏳ Analyzing...</span>
+          <span v-if="!loading">🔍 {{ t('diagnosis.getDiagnosis') }}</span>
+          <span v-else>⏳ {{ t('diagnosis.analyzing') }}</span>
         </button>
       </div>
 
@@ -102,14 +94,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { diagnosisService } from '../services/api'
+import { useI18n } from '../i18n/useI18n'
 
 const router = useRouter()
+const { t, language, languageOptions } = useI18n()
 
 const activeTab = ref('image')
-const selectedLanguage = ref('en')
+const selectedLanguage = ref(language.value)
 const selectedFile = ref(null)
 const imagePreview = ref(null)
 const plantType = ref('')
@@ -117,6 +111,14 @@ const symptoms = ref('')
 const loading = ref(false)
 const error = ref('')
 const tabs = ['image', 'text']
+
+watch(language, (newLanguage) => {
+  selectedLanguage.value = newLanguage
+})
+
+watch(selectedLanguage, (newLanguage) => {
+  language.value = newLanguage
+})
 
 const onFileSelected = (event) => {
   selectedFile.value = event.target.files[0]
@@ -143,7 +145,7 @@ const diagnoseImage = async () => {
     const response = await diagnosisService.diagnoseImage(formData, selectedLanguage.value)
     router.push({ name: 'results', params: { id: response.data.diagnosis_id }, query: response.data })
   } catch (err) {
-    error.value = err.response?.data?.detail || 'Error analyzing image. Please try again.'
+    error.value = err.response?.data?.detail || t('diagnosis.imageError')
   } finally {
     loading.value = false
   }
@@ -156,7 +158,7 @@ const diagnoseText = async () => {
     const response = await diagnosisService.diagnoseText(symptoms.value, selectedLanguage.value, plantType.value)
     router.push({ name: 'results', params: { id: response.data.diagnosis_id }, query: response.data })
   } catch (err) {
-    error.value = err.response?.data?.detail || 'Error processing diagnosis. Please try again.'
+    error.value = err.response?.data?.detail || t('diagnosis.textError')
   } finally {
     loading.value = false
   }

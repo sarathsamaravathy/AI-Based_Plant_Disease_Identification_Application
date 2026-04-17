@@ -9,10 +9,10 @@ import Results from './pages/Results.vue'
 import History from './pages/History.vue'
 
 const routes = [
-  { path: '/', component: Home },
-  { path: '/diagnose', component: DiagnosisPage },
-  { path: '/results/:id', component: Results },
-  { path: '/history', component: History },
+  { path: '/', name: 'home', component: Home },
+  { path: '/diagnose', name: 'diagnose', component: DiagnosisPage },
+  { path: '/results/:id', name: 'results', component: Results },
+  { path: '/history', name: 'history', component: History },
 ]
 
 const router = createRouter({

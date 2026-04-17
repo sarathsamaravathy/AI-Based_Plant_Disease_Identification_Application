@@ -1,43 +1,43 @@
 <template>
   <div class="home-container">
     <div class="hero">
-      <h2>Identify Plant Diseases with AI</h2>
-      <p>Upload an image or describe symptoms to get instant diagnosis and treatment recommendations</p>
+      <h2>{{ t('home.heroTitle') }}</h2>
+      <p>{{ t('home.heroSubtitle') }}</p>
       <div class="cta-buttons">
-        <RouterLink to="/diagnose" class="btn btn-primary">Start Diagnosis</RouterLink>
-        <a href="#features" class="btn btn-secondary">Learn More</a>
+        <RouterLink to="/diagnose" class="btn btn-primary">{{ t('home.startDiagnosis') }}</RouterLink>
+        <a href="#features" class="btn btn-secondary">{{ t('home.learnMore') }}</a>
       </div>
     </div>
 
     <section id="features" class="features">
-      <h3>Key Features</h3>
+      <h3>{{ t('home.keyFeatures') }}</h3>
       <div class="feature-grid">
         <div class="feature-card">
           <div class="feature-icon">📸</div>
-          <h4>Image Analysis</h4>
-          <p>Upload clear plant images for AI-powered disease detection</p>
+          <h4>{{ t('home.imageAnalysisTitle') }}</h4>
+          <p>{{ t('home.imageAnalysisDesc') }}</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🌍</div>
-          <h4>Multilingual Support</h4>
-          <p>Results in 22+ Indian languages with audio output</p>
+          <h4>{{ t('home.multilingualTitle') }}</h4>
+          <p>{{ t('home.multilingualDesc') }}</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">💡</div>
-          <h4>Smart Recommendations</h4>
-          <p>Get personalized treatment and prevention strategies</p>
+          <h4>{{ t('home.recommendationTitle') }}</h4>
+          <p>{{ t('home.recommendationDesc') }}</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">📱</div>
-          <h4>Mobile Friendly</h4>
-          <p>Works seamlessly on desktop and mobile devices</p>
+          <h4>{{ t('home.mobileTitle') }}</h4>
+          <p>{{ t('home.mobileDesc') }}</p>
         </div>
       </div>
     </section>
 
     <section class="supported-diseases">
-      <h3>Supported Diseases</h3>
-      <p>38 plant disease classes across major Indian crops including rice, wheat, tomato, potato, and more</p>
+      <h3>{{ t('home.supportedDiseases') }}</h3>
+      <p>{{ t('home.supportedDiseasesDesc') }}</p>
       <div class="disease-tags">
         <span class="tag">Brown Spot</span>
         <span class="tag">Leaf Blight</span>
@@ -45,7 +45,7 @@
         <span class="tag">Early Blight</span>
         <span class="tag">Late Blight</span>
         <span class="tag">Septoria Leaf Spot</span>
-        <span class="tag">And 32+ more...</span>
+        <span class="tag">{{ t('home.andMore') }}</span>
       </div>
     </section>
   </div>
@@ -53,6 +53,9 @@
 
 <script setup>
 import { RouterLink } from 'vue-router'
+import { useI18n } from '../i18n/useI18n'
+
+const { t } = useI18n()
 </script>
 
 <style scoped>
