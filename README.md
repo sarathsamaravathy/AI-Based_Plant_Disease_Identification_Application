@@ -75,6 +75,7 @@ cd AI-Based_Plant_Disease_Identification_Application
 
    - **Windows:**
      ```bash
+     cd AI-Based_Plant_Disease_Identification_Application
      venv\Scripts\activate
      ```
    - **macOS/Linux:**
