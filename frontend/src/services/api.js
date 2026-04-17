@@ -30,13 +30,14 @@ export const diagnosisService = {
   },
 
   // Retranslate existing diagnosis to a new language
-  retranslateDiagnosis(diagnosisType, language, diseaseNameEn = null, plantType = null) {
+  retranslateDiagnosis(diagnosisType, language, diseaseNameEn = null, plantType = null, currentDiseaseName = null) {
     return apiClient.get('/diagnose/retranslate', {
       params: {
         diagnosis_type: diagnosisType,
         language,
         ...(diseaseNameEn ? { disease_name_en: diseaseNameEn } : {}),
         ...(plantType ? { plant_type: plantType } : {}),
+        ...(currentDiseaseName ? { current_disease_name: currentDiseaseName } : {}),
       },
     })
   },

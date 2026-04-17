@@ -3,7 +3,7 @@
     <div class="results-card">
       <h2>{{ t('results.title') }}</h2>
       
-      <div v-if="diagnosis" class="diagnosis-results">
+      <div v-if="diagnosis && !isRetranslating" class="diagnosis-results">
         <!-- Disease Info -->
         <div class="disease-info">
           <div class="disease-header">
@@ -120,6 +120,7 @@ import { useI18n } from '../i18n/useI18n'
 const route = useRoute()
 const { t, language } = useI18n()
 const feedbackLoading = ref(false)
+const isRetranslating = ref(false)
 const feedback = ref({
   diagnosis_correct: null,
   recommendation_helpful: null,
@@ -143,12 +144,14 @@ const diagnosis = ref(parseQuery(route.query))
 
 // Re-fetch translated content whenever the global language changes
 watch(language, async (newLang) => {
+  isRetranslating.value = true
   try {
     const response = await diagnosisService.retranslateDiagnosis(
       diagnosisType,
       newLang,
       diagnosis.value.disease_name_en || null,
       diagnosis.value.plant_type || null,
+      diagnosis.value.disease_name || null,
     )
     // Preserve id and type, update translated fields
     diagnosis.value = {
@@ -157,6 +160,8 @@ watch(language, async (newLang) => {
     }
   } catch {
     // If retranslation fails, keep existing content
+  } finally {
+    isRetranslating.value = false
   }
 })
 

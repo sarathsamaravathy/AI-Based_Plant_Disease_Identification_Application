@@ -642,6 +642,7 @@ async def retranslate_diagnosis(
     language: str = "en",
     disease_name_en: Optional[str] = None,
     plant_type: Optional[str] = None,
+    current_disease_name: Optional[str] = None,
 ):
     """Return translated diagnosis for the given type and language.
 
@@ -672,7 +673,7 @@ async def retranslate_diagnosis(
             return {
                 "disease_name": _prefer_localized_text(
                     llm_result.get("disease_name_localized", ""),
-                    localized["disease_name"],
+                    current_disease_name or disease_name_en or localized["disease_name"],
                     language,
                 ) or disease_name_en,
                 "disease_name_en": disease_name_en,
@@ -699,7 +700,7 @@ async def retranslate_diagnosis(
             }
 
     return {
-        "disease_name": data["disease_name"],
+        "disease_name": current_disease_name or disease_name_en or data["disease_name"],
         "disease_name_en": disease_name_en or "",
         "confidence_score": confidence,
         "severity_level": severity,
