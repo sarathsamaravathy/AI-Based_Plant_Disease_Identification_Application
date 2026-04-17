@@ -136,6 +136,14 @@ ollama serve
 
    The frontend will be available at `http://localhost:5173`.
 
+> If you still see the default Vite welcome page, make sure you are opening the diagnosis route. Use the app by clicking **Start Diagnosis** or visiting:
+>
+> ```bash
+> http://localhost:5173/diagnose
+> ```
+>
+> On the diagnosis page, the **Output Language** selector is available for both image and symptom-based diagnosis.
+
 ### Step 6: Alternative - Docker Setup (Optional)
 
 If you prefer using Docker:
@@ -251,3 +259,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Notes
 
 This project is intended as a development prototype for plant disease diagnosis and requires manual validation before any production use.
+
+## Full Project Documentation
+
+A comprehensive project document is available in the repository:
+
+- `Project_Documentation.rtf` — contains explanations of backend code, frontend flow, multilingual handling, dataset assumptions, training notes, and viva-ready details.

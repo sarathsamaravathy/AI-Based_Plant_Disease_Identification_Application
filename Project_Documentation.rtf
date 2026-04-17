@@ -1,0 +1,117 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0\fnil Segoe UI;}{\f1\fswiss Arial;}}
+{\colortbl;\red0\green0\blue0;}
+\pard\qc\f0\fs36 AI-Based Plant Disease Identification Application\par
+\pard\fs24\par
+\pard\f1\fs24\b 1. Project Overview\b0\par
+This repository contains a prototype application for multilingual plant disease diagnosis. The application uses a Vue.js frontend and a FastAPI backend. The architecture is intended to support image-based and text-based diagnosis, multilingual output, and feedback capture for future model improvement.\par
+\pard\fs24\par
+\b 2. System Architecture\b0\par
+The application has two main layers:\par
+\pard\li720\fi-720\fs20\bullet Frontend: Vue 3 web application served by Vite.\par
+\bullet Backend: FastAPI REST API that receives diagnosis requests, performs model inference and translation, and manages feedback.\par
+\bullet Data persistence: SQLAlchemy models define diagnosis and feedback records.\par
+\pard\fs24\par
+\b 3. Frontend Details\b0\par
+\pard\fi720\fs20\b Entry point: \b0 `frontend/src/main.js`\par
+\pard\fi1440\fs20\bullet Creates the Vue app and configures router paths:\par
+  \pard\fi2160\bullet `/` -> Home\par
+  \bullet `/diagnose` -> DiagnosisPage\par
+  \bullet `/results/:id` -> Results page\par
+  \bullet `/history` -> History page\par
+\pard\fi720\fs20\bullet `frontend/src/App.vue` wraps the router and page layout.\par
+\pard\fs20\bullet `frontend/src/services/api.js` defines the API client and backend calls:\par
+  \pard\fi2160\bullet `diagnoseImage()` sends image files and selected language to `/api/v1/diagnose`.\par
+  \bullet `diagnoseText()` sends symptom description and language to `/api/v1/diagnose/text`.\par
+  \bullet `getLanguages()` retrieves supported languages from `/api/v1/languages`.\par
+  \bullet `submitFeedback()` posts user feedback to `/api/v1/feedback`.\par
+\pard\fs24\par
+\b Diagnosis UI\b0\par
+\pard\fi720\fs20\bullet `frontend/src/pages/DiagnosisPage.vue` contains the main diagnosis interface.\par
+  \pard\fi2160\bullet Two tabs: image upload and symptom text input.\par
+  \bullet Output language selector is present in both tabs using `selectedLanguage`.\par
+  \bullet The user can optionally specify plant type.\par
+  \bullet When the user submits, the page calls the backend with the chosen language.\par
+\pard\fs24\par
+\b Results and History\b0\par
+\pard\fi720\fs20\bullet `frontend/src/pages/Results.vue` displays diagnosis results.\par
+\bullet `frontend/src/pages/History.vue` displays historical diagnosis records and target language.\par
+\pard\fs24\par
+\b 4. Backend Details\b0\par
+\pard\fs20\b Entry point: \b0 `src/api/main.py`\par
+\pard\fi720\fs20\bullet FastAPI application with CORS support.\par
+\bullet Endpoints:\par
+  \pard\fi1440\bullet `GET /health` - health check.\par
+  \bullet `POST /api/v1/diagnose` - image diagnosis endpoint.\par
+  \bullet `POST /api/v1/diagnose/text` - text diagnosis endpoint.\par
+  \bullet `GET /api/v1/languages` - returns supported languages.\par
+  \bullet `POST /api/v1/feedback` - accepts feedback records.\par
+\pard\fs20\bullet The current implementation returns placeholder responses for both diagnosis endpoints (`Pipeline implementation pending`).\par
+\pard\fs24\par
+\b 5. Configuration\b0\par
+\pard\fi720\fs20\bullet `src/config.py` defines application settings using Pydantic Settings.\par
+  \pard\fi1440\bullet API host and port\par
+  \bullet Database URL and connection settings\par
+  \bullet LLM configuration including model, temperature, and local API URL\par
+  \bullet Vector DB settings for Chroma\par
+  \bullet Supported languages: `en,hi,ta,te,ka,ml,kn,mr,gu,bn`\par
+  \bullet Vision model settings, including default `efficientnet_v2` and model path.\par
+\pard\fs24\par
+\b 6. Multilingual Handling\b0\par
+\pard\fs20\bullet Supported languages are defined in both the frontend and backend.\par
+\bullet The frontend exposes an `Output Language` drop-down on the diagnosis page.\par
+\bullet Selected language is sent as a request parameter to the backend.\par
+\bullet `src/multilingual/translator.py` contains a translator stub with supported language codes and a `translate()` method.\par
+\pard\fi720\fs20\bullet `Translator.translate()` currently returns the original text and logs translation actions; it is a placeholder for integration with a real translation service.\par
+\pard\fs20\bullet The backend language endpoint `/api/v1/languages` returns the same supported language mapping.\par
+\pard\fs24\par
+\b 7. Vision Model and PlantVillage Connection\b0\par
+\pard\fs20\bullet `src/vision/model.py` defines `VisionModel`, a wrapper around PyTorch torchvision models.\par
+  \pard\fi1440\bullet Supports `efficientnet_v2_s` and `vit_b16`.\par
+  \bullet Loads pretrained weights from torchvision and replaces the final classifier head to support `num_classes=38`.\par
+  \bullet Provides a `predict()` method returning logits and probabilities.\par
+\pard\fs20\bullet The repository contains no dataset files. The design assumes a dataset such as the PlantVillage leaf disease dataset would be used for training.\par
+\pard\fs20\bullet `PlantVillage` is mentioned in README acknowledgments, but there is no integrated dataset loader or training script in this repository.\par
+\pard\fs24\par
+\b 8. Training and Detection\b0\par
+\pard\fs20\bullet This codebase currently has no explicit training pipeline, no `train.py`, and no labeled dataset loader.\par
+\bullet `VisionModel` is prepared for classification, not detection.\par
+\bullet There is no object detection module in the repository; only classification inference is architected.\par
+\pard\fs24\par
+\b 9. Database Models\b0\par
+\pard\fs20\bullet `src/database/models.py` defines ORM models using SQLAlchemy:\par
+  \pard\fi1440\bullet `DiagnosisRecord` stores diagnosis data, detected disease, confidence, symptoms, severity, recommendations, and target language.\par
+  \bullet `FeedbackRecord` stores user feedback and notes for RLHF-style improvement.\par
+\pard\fs24\par
+\b 10. LLM Reasoning\b0\par
+\pard\fs20\bullet `src/llm/engine.py` defines `DiagnosisEngine`, a stub for LLM-based reasoning.\par
+\bullet It is designed to generate diagnostic text and recommendations from disease name, confidence, and symptoms.\par
+\bullet Current implementation returns a placeholder message and does not call a real LLM.\par
+\pard\fs24\par
+\b 11. Frontend Language Option\b0\par
+\pard\fs20\bullet In the current frontend application, the language selector exists on the diagnosis page in both image and text modes.\par
+\bullet If the welcome page appears, you must click \b Start Diagnosis\b0 or visit `http://localhost:5173/diagnose` to access the real UI.\par
+\pard\fs24\par
+\b 12. How to Run\b0\par
+\pard\fs20\bullet Backend:\par
+  \pard\fi1440\bullet `python -m venv venv`\par
+  \bullet `venv\\Scripts\\activate` (Windows) or `source venv/bin/activate` (macOS/Linux)\par
+  \bullet `python -m pip install --upgrade pip setuptools wheel`\par
+  \bullet `python -m pip install --prefer-binary -r requirements.txt`\par
+  \bullet `uvicorn src.api.main:app --reload`\par
+\pard\fs20\bullet Frontend:\par
+  \pard\fi1440\bullet `cd frontend`\par
+  \bullet `npm install`\par
+  \bullet `npm run dev`\par
+\pard\fs24\par
+\b 13. What to Present in Viva\b0\par
+\pard\fs20\bullet Explain the two-tier architecture: frontend UI and backend API.\par
+\bullet Describe how the frontend selects a language and sends it to the backend.\par
+\bullet Describe the placeholder nature of the backend diagnosis endpoints and the need for a real model inference/LLM integration.\par
+\bullet Explain that `VisionModel` is classifier-focused, using pretrained torchvision models adapted for 38 disease classes.\par
+\bullet Clarify that the multilingual system is structured but not fully implemented: translation stubs are in `src/multilingual/translator.py`, and supported languages are exposed through the API.\par
+\bullet Mention that PlantVillage is referenced as the intended training dataset, but actual dataset loading and training scripts are absent from the repo.\par
+\pard\fs24\par
+\b 14. Summary\b0\par
+This repository is a prototype that demonstrates the skeleton of a plant disease diagnosis system with multilingual capabilities. It includes a working Vue frontend, a FastAPI backend API, and model wrappers, but it still needs a complete inference pipeline, dataset integration, and training code to be fully production ready.\par
+}
