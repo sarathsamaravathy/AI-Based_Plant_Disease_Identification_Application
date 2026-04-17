@@ -355,6 +355,31 @@ async def diagnose_text(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/v1/diagnose/retranslate")
+async def retranslate_diagnosis(diagnosis_type: str = "image", language: str = "en"):
+    """Return translated mock diagnosis for the given type and language."""
+    if diagnosis_type == "text":
+        data = MOCK_TEXT_DIAGNOSIS.get(language, MOCK_TEXT_DIAGNOSIS["en"])
+        confidence = 0.65
+        severity = "low"
+    else:
+        data = MOCK_IMAGE_DIAGNOSIS.get(language, MOCK_IMAGE_DIAGNOSIS["en"])
+        confidence = 0.72
+        severity = "medium"
+
+    return {
+        "disease_name": data["disease_name"],
+        "confidence_score": confidence,
+        "severity_level": severity,
+        "symptoms": data["symptoms"],
+        "treatment_recommendations": data["treatment_recommendations"],
+        "preventive_measures": data["preventive_measures"],
+        "farmer_friendly_explanation": data["explanation"],
+        "audio_available": False,
+        "language": language,
+    }
+
+
 @app.get("/api/v1/languages")
 async def get_supported_languages():
     """Get list of supported languages."""

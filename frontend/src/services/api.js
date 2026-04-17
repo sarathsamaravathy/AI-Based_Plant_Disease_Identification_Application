@@ -27,6 +27,11 @@ export const diagnosisService = {
     })
   },
 
+  // Retranslate existing diagnosis to a new language
+  retranslateDiagnosis(diagnosisType, language) {
+    return apiClient.get('/diagnose/retranslate', { params: { diagnosis_type: diagnosisType, language } })
+  },
+
   // Get supported languages
   getLanguages() {
     return apiClient.get('/languages')

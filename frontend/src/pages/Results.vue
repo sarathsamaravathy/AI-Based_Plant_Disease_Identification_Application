@@ -112,14 +112,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { diagnosisService } from '../services/api'
 import { useI18n } from '../i18n/useI18n'
 
 const route = useRoute()
-const { t } = useI18n()
-const diagnosis = ref(route.query)
+const { t, language } = useI18n()
 const feedbackLoading = ref(false)
 const feedback = ref({
   diagnosis_correct: null,
@@ -127,9 +126,33 @@ const feedback = ref({
   user_notes: '',
 })
 
-onMounted(() => {
-  // Load diagnosis data if needed
-  // In a real app, you'd fetch this from the API using the diagnosis ID
+const diagnosisType = route.query.diagnosis_type || 'image'
+
+// URL query params stringify arrays — parse them back
+const parseQuery = (q) => {
+  const parsed = { ...q }
+  for (const key of ['symptoms', 'treatment_recommendations', 'preventive_measures']) {
+    if (typeof parsed[key] === 'string') {
+      try { parsed[key] = JSON.parse(parsed[key]) } catch { parsed[key] = [parsed[key]] }
+    }
+  }
+  return parsed
+}
+
+const diagnosis = ref(parseQuery(route.query))
+
+// Re-fetch translated content whenever the global language changes
+watch(language, async (newLang) => {
+  try {
+    const response = await diagnosisService.retranslateDiagnosis(diagnosisType, newLang)
+    // Preserve id and type, update translated fields
+    diagnosis.value = {
+      ...diagnosis.value,
+      ...response.data,
+    }
+  } catch {
+    // If retranslation fails, keep existing content
+  }
 })
 
 const playAudio = () => {

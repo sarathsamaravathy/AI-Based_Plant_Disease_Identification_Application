@@ -145,9 +145,7 @@ const diagnoseImage = async () => {
     }
 
     const response = await diagnosisService.diagnoseImage(formData, selectedLanguage.value)
-    router.push({ name: 'results', params: { id: response.data.diagnosis_id }, query: response.data })
-  } catch (err) {
-    error.value = err.response?.data?.detail || t('diagnosis.imageError')
+    router.push({ name: 'results', params: { id: response.data.diagnosis_id }, query: { ...response.data, diagnosis_type: 'image' } })
   } finally {
     loading.value = false
   }
@@ -158,9 +156,7 @@ const diagnoseText = async () => {
   loading.value = true
   try {
     const response = await diagnosisService.diagnoseText(symptoms.value, selectedLanguage.value, plantType.value)
-    router.push({ name: 'results', params: { id: response.data.diagnosis_id }, query: response.data })
-  } catch (err) {
-    error.value = err.response?.data?.detail || t('diagnosis.textError')
+    router.push({ name: 'results', params: { id: response.data.diagnosis_id }, query: { ...response.data, diagnosis_type: 'text' } })
   } finally {
     loading.value = false
   }
