@@ -62,8 +62,11 @@ ollama run llama3
 1. **Create virtual environment:**
    Install Python 3.12.7
    open a new terminal
+```bash
+cd AI-Based_Plant_Disease_Identification_Application
+```
    ```bash
-   #cd to your pythin 3.12 directory(eg: C:\Users\sarat\AppData\Local\Programs\Python\Python312)
+   #cd to your python 3.12 directory(eg: C:\Users\sarat\AppData\Local\Programs\Python\Python312)
    python -m venv venv
    ```
 
