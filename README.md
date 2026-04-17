@@ -284,6 +284,12 @@ npm test
    - Reduce batch sizes in model configurations
    - Use smaller models if available
 
+8. **Docker frontend build fails with `vite: not found`:**
+   - Pull latest code: `git pull`
+   - Rebuild frontend image without cache:
+     `docker compose build --no-cache --progress=plain frontend`
+   - Start stack again: `docker compose up --build`
+
 ### Getting Help
 
 - Check the [Issues](https://github.com/sarathsamaravathy/AI-Based_Plant_Disease_Identification_Application/issues) page
