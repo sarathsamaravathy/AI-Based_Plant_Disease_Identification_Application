@@ -60,12 +60,14 @@ ollama run llama3
 ### Step 4: Backend Setup
 
 1. **Create virtual environment:**
+   Install Python 3.12.7
 
    ```bash
+   #cd to your pythin 3.12 directory(eg: C:\Users\sarat\AppData\Local\Programs\Python\Python312)
    python -m venv venv
    ```
 
-2. **Activate virtual environment:**
+3. **Activate virtual environment:**
 
    - **Windows:**
      ```bash
@@ -76,13 +78,13 @@ ollama run llama3
      source venv/bin/activate
      ```
 
-3. **Upgrade packaging tools:**
+4. **Upgrade packaging tools:**
 
    ```bash
    python -m pip install --upgrade pip setuptools wheel
    ```
 
-4. **Install Python dependencies:**
+5. **Install Python dependencies:**
 
    ```bash
    python -m pip install --prefer-binary -r requirements.txt
@@ -94,7 +96,7 @@ ollama run llama3
    > python -m pip install --prefer-binary -r requirements.txt
    > ```
 
-5. **Configure environment variables:**
+6. **Configure environment variables:**
 
    ```bash
    cp .env.example .env
@@ -102,7 +104,7 @@ ollama run llama3
 
    Edit `.env` with your database and Ollama settings.
 
-6. **Start the backend server:**
+7. **Start the backend server:**
 
    ```bash
    uvicorn src.api.main:app --reload
