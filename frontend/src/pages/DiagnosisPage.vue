@@ -144,8 +144,11 @@ const diagnoseImage = async () => {
       formData.append('plant_type', plantType.value)
     }
 
-    const response = await diagnosisService.diagnoseImage(formData, selectedLanguage.value)
+    const response = await diagnosisService.diagnoseImage(formData)
     router.push({ name: 'results', params: { id: response.data.diagnosis_id }, query: { ...response.data, diagnosis_type: 'image' } })
+  } catch (err) {
+    const detail = err?.response?.data?.detail
+    error.value = Array.isArray(detail) ? detail.map((d) => d.msg).join(', ') : (detail || err.message || t('diagnosis.errorAnalyzingImage'))
   } finally {
     loading.value = false
   }
@@ -157,6 +160,9 @@ const diagnoseText = async () => {
   try {
     const response = await diagnosisService.diagnoseText(symptoms.value, selectedLanguage.value, plantType.value)
     router.push({ name: 'results', params: { id: response.data.diagnosis_id }, query: { ...response.data, diagnosis_type: 'text' } })
+  } catch (err) {
+    const detail = err?.response?.data?.detail
+    error.value = Array.isArray(detail) ? detail.map((d) => d.msg).join(', ') : (detail || err.message || t('diagnosis.errorGettingDiagnosis'))
   } finally {
     loading.value = false
   }

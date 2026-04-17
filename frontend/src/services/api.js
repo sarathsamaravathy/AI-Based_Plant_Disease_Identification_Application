@@ -9,21 +9,22 @@ const apiClient = axios.create({
 
 export const diagnosisService = {
   // Upload image for diagnosis
-  diagnoseImage(formData, language = 'en') {
+  diagnoseImage(formData) {
     return apiClient.post('/diagnose', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      params: { language },
     })
   },
 
   // Text-based diagnosis
   diagnoseText(description, language = 'en', plantType = null) {
-    return apiClient.post('/diagnose/text', {
-      description,
-      language,
-      plant_type: plantType,
+    return apiClient.post('/diagnose/text', null, {
+      params: {
+        description,
+        language,
+        plant_type: plantType,
+      },
     })
   },
 
