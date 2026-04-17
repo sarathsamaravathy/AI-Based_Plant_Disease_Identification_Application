@@ -275,8 +275,9 @@ npm test
    - Make sure system date/time is correct on the host machine
    - Retry after Docker Desktop restart
    - Ensure corporate proxy/SSL inspection is configured in Docker Desktop if applicable
-   - Rebuild with no cache after the latest Dockerfile update:
-     `docker compose build --no-cache api`
+    - Pull latest repo changes (includes Dockerfile fix for trusted PyPI hosts)
+    - Rebuild with no cache after the latest Dockerfile update:
+       `docker compose build --no-cache --progress=plain api`
    - Then run the stack again: `docker compose up --build`
 
 7. **Memory issues:**
