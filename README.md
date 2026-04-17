@@ -297,6 +297,12 @@ npm test
     - Start stack again: `docker compose up --build`
    - If the network uses SSL inspection/proxy, the frontend Docker build now applies npm fallback settings automatically (`strict-ssl=false` with retry install path).
 
+10. **Docker frontend build fails with `Cannot find module @rollup/rollup-linux-x64-gnu`:**
+    - Pull latest code: `git pull` (includes frontend Dockerfile fix for Rollup optional dependency)
+    - Rebuild frontend image without cache:
+       `docker compose build --no-cache --progress=plain frontend`
+    - Start stack again: `docker compose up --build`
+
 ### Getting Help
 
 - Check the [Issues](https://github.com/sarathsamaravathy/AI-Based_Plant_Disease_Identification_Application/issues) page
