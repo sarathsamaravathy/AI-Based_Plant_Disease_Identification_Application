@@ -456,10 +456,13 @@ async def diagnose(
                 if llm_result.get("llm_generated"):
                     pipeline_mode = "real_vision_llm"
 
-            symptoms = llm_result.get("symptoms", [])
-            treatment = llm_result.get("treatment_recommendations", [])
-            preventive = llm_result.get("preventive_measures", [])
-            explanation = llm_result.get("farmer_friendly_explanation", disease_name)
+            # Keep details in the selected language even if LLM is unavailable
+            # or returns incomplete content.
+            localized = MOCK_IMAGE_DIAGNOSIS.get(language, MOCK_IMAGE_DIAGNOSIS["en"])
+            symptoms = llm_result.get("symptoms") or localized["symptoms"]
+            treatment = llm_result.get("treatment_recommendations") or localized["treatment_recommendations"]
+            preventive = llm_result.get("preventive_measures") or localized["preventive_measures"]
+            explanation = llm_result.get("farmer_friendly_explanation") or localized["explanation"]
             severity = llm_result.get("severity_level", "medium")
         else:
             # Mock data path

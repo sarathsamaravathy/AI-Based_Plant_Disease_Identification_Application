@@ -21,6 +21,18 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+LANGUAGE_NAMES = {
+    "en": "English",
+    "hi": "Hindi",
+    "ta": "Tamil",
+    "te": "Telugu",
+    "ka": "Kannada",
+    "ml": "Malayalam",
+    "mr": "Marathi",
+    "gu": "Gujarati",
+    "bn": "Bengali",
+}
+
 # ---------------------------------------------------------------------------
 # Prompt template – chain-of-thought reasoning for agricultural diagnosis
 # ---------------------------------------------------------------------------
@@ -31,6 +43,10 @@ A computer vision classifier analysed a leaf image and produced the following:
   Confidence       : {confidence_pct}%
   Plant type       : {plant_type}
   Observed symptoms: {symptoms_list}
+
+IMPORTANT LANGUAGE RULE:
+- Write ALL output fields in {target_language_name}.
+- Do not mix with English unless the crop/disease scientific name must stay unchanged.
 
 Think step-by-step, then respond ONLY with a single valid JSON object in this exact schema:
 {{
@@ -65,11 +81,13 @@ class DiagnosisEngine:
 
     # ------------------------------------------------------------------
     # Public API
-    # ------------------------------------------------------------------
-
-    def generate_diagnosis(
-        self,
-        disease_name: str,
+    # --target_language_name = LANGUAGE_NAMES.get(language, "English")
+        prompt = DIAGNOSIS_PROMPT.format(
+            disease_name=disease_name,
+            confidence_pct=round(confidence_score * 100, 1),
+            plant_type=plant_type or "unknown crop",
+            symptoms_list=", ".join(symptoms) if symptoms else "none reported",
+            target_language_name=target_language_name
         confidence_score: float,
         symptoms: List[str],
         plant_type: str,
