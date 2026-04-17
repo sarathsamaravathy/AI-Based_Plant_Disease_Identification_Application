@@ -6,7 +6,8 @@ A multilingual AI-powered application for identifying plant diseases from leaf i
 
 - 🖼️ **Image-based diagnosis**: Upload leaf images for disease detection
 - 📝 **Text-based reporting**: Describe symptoms in natural language
-- 🌍 **Multilingual support**: Results in 22 Indian languages (Hindi, Tamil, Telugu, etc.)
+- 🌍 **Multilingual UI**: The entire interface (nav, labels, buttons, forms) switches language instantly — supports English, हिन्दी, தமிழ், తెలుగు, and 5 more Indian languages. Language preference is saved automatically.
+- 🌐 **Multilingual AI output**: Diagnosis results delivered in 22 Indian languages (Hindi, Tamil, Telugu, etc.)
 - 🤖 **AI-powered reasoning**: Uses self-hosted LLMs via Ollama
 - 📊 **Feedback system**: Collect user feedback for model improvement
 - 🐳 **Docker support**: Easy deployment with Docker Compose
@@ -166,9 +167,10 @@ This will start all services (backend, frontend, database, Ollama) in containers
 ## Usage
 
 1. Open your browser and go to `http://localhost:5173`
-2. Upload a leaf image or describe symptoms
-3. Select your preferred language
-4. Get AI-powered disease diagnosis with treatment suggestions
+2. **Select your interface language** using the dropdown in the top-right of the header — the whole UI switches instantly. Your choice is saved for future visits.
+3. Upload a leaf image or describe symptoms
+4. Optionally change the **Output Language** on the diagnosis page if you want AI results in a different language
+5. Get AI-powered disease diagnosis with treatment suggestions
 
 ## Testing
 
@@ -226,6 +228,7 @@ npm test
 
 ```
 ├── frontend/          # Vue.js application
+│   └── src/i18n/      # UI translation packs (EN, HI, TA, TE + 5 fallback languages)
 ├── src/              # Python backend code
 │   ├── api/          # FastAPI routes
 │   ├── database/     # Database models and connections
