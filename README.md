@@ -290,6 +290,12 @@ npm test
      `docker compose build --no-cache --progress=plain frontend`
    - Start stack again: `docker compose up --build`
 
+9. **Docker frontend build fails with `npm error Exit handler never called!`:**
+    - Pull latest code: `git pull` (includes frontend Dockerfile update to stable Node Debian image)
+    - Rebuild frontend image without cache:
+       `docker compose build --no-cache --progress=plain frontend`
+    - Start stack again: `docker compose up --build`
+
 ### Getting Help
 
 - Check the [Issues](https://github.com/sarathsamaravathy/AI-Based_Plant_Disease_Identification_Application/issues) page
