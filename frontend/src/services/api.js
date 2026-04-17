@@ -4,7 +4,8 @@ const API_BASE = 'http://localhost:8000/api/v1'
 
 const apiClient = axios.create({
   baseURL: API_BASE,
-  timeout: 30000,
+  // First inference can be slower when model/LLM is warming up.
+  timeout: 120000,
 })
 
 export const diagnosisService = {

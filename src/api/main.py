@@ -119,7 +119,12 @@ async def startup_event():
         from src.llm.engine import DiagnosisEngine
         ollama_url = os.getenv("LLM_API_URL", "http://localhost:11434")
         llm_model = os.getenv("LLM_MODEL", "llama3")
-        _llm_engine = DiagnosisEngine(ollama_url=ollama_url, model=llm_model)
+        llm_timeout = int(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "20"))
+        _llm_engine = DiagnosisEngine(
+            ollama_url=ollama_url,
+            model=llm_model,
+            request_timeout_seconds=llm_timeout,
+        )
         if _llm_engine.is_available():
             logger.info(f"Ollama reachable at {ollama_url} – LLM generation active.")
         else:

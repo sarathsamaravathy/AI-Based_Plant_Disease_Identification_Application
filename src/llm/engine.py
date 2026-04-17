@@ -54,11 +54,13 @@ class DiagnosisEngine:
         self,
         ollama_url: str = "http://localhost:11434",
         model: str = "llama3",
+        request_timeout_seconds: int = 20,
     ):
         base = ollama_url.rstrip("/")
         # Accept either base URL (...:11434) or API URL (...:11434/api)
         self.ollama_url = base[:-4] if base.endswith("/api") else base
         self.model = model
+        self.request_timeout_seconds = request_timeout_seconds
         logger.info(f"DiagnosisEngine initialised | Ollama URL: {ollama_url} | model: {model}")
 
     # ------------------------------------------------------------------
@@ -89,7 +91,7 @@ class DiagnosisEngine:
             response = requests.post(
                 f"{self.ollama_url}/api/generate",
                 json={"model": self.model, "prompt": prompt, "stream": False, "format": "json"},
-                timeout=60,
+                timeout=self.request_timeout_seconds,
             )
             response.raise_for_status()
             raw = response.json().get("response", "{}")
