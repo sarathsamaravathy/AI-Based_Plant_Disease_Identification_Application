@@ -51,7 +51,7 @@ ollama pull llama2  # or any supported model
 
 ```bash
 ollama serve
-or if its already running ->
+#or if its already running ->
 ollama run llama3
 ```
 
