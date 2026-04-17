@@ -19,7 +19,7 @@ services:
       - "8000:8000"
     env_file: .env
     environment:
-      - DATABASE_URL=postgresql://farmer:password@postgres:5432/plant_disease_db
+      - DATABASE_URL=postgresql://postgres:vectors@postgres:5432/plant_disease_db
       - LLM_API_URL=http://ollama:11434
       - ALLOWED_ORIGINS=http://localhost,http://localhost:80
       - AUTO_DOWNLOAD_PRETRAINED_MODEL=true
@@ -58,8 +58,8 @@ services:
     container_name: plant-disease-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: farmer
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: vectors
       POSTGRES_DB: plant_disease_db
     ports:
       - "5432:5432"
@@ -68,7 +68,7 @@ services:
     networks:
       - plant-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U farmer"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
