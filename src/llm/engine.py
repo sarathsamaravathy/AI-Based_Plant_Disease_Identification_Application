@@ -55,7 +55,9 @@ class DiagnosisEngine:
         ollama_url: str = "http://localhost:11434",
         model: str = "llama3",
     ):
-        self.ollama_url = ollama_url.rstrip("/")
+        base = ollama_url.rstrip("/")
+        # Accept either base URL (...:11434) or API URL (...:11434/api)
+        self.ollama_url = base[:-4] if base.endswith("/api") else base
         self.model = model
         logger.info(f"DiagnosisEngine initialised | Ollama URL: {ollama_url} | model: {model}")
 
