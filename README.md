@@ -49,15 +49,15 @@ cd AI-Based_Plant_Disease_Identification_Application
 
 ```bash
 docker compose down -v
+docker compose build --no-cache --progress=plain api frontend
 docker compose up --build
 ```
 
 This starts backend, frontend, PostgreSQL, Ollama, and MLflow in containers.
 
-If you are updating an existing clone (recommended after fixes), run this sequence:
+If you need to rebuild only app services later, run this sequence:
 
 ```bash
-git pull
 docker compose build --no-cache --progress=plain api frontend
 docker compose up --build
 ```
