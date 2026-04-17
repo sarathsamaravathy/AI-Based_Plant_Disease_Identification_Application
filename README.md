@@ -89,6 +89,8 @@ ollama run llama3
    > **Note:** If you encounter `ModuleNotFoundError: No module named 'pkg_resources'`, use this fallback:
    > ```bash
    > python -m pip install "setuptools<80.10.3"
+   >  ```
+   > ```bash
    > python -m pip install --prefer-binary -r requirements.txt
    > ```
 
