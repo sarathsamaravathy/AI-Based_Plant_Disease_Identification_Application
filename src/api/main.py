@@ -7,6 +7,7 @@ from typing import Optional, List
 from datetime import datetime
 import logging
 import os
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -47,16 +48,49 @@ async def diagnose(
 ):
     """Upload image for disease diagnosis."""
     try:
-        if file.content_type not in ["image/jpeg", "image/png", "image/webp"]:
-            raise HTTPException(status_code=400, detail="Invalid image format")
-        
-        logger.info(f"Diagnosis request for language: {language}")
-        
+        allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
+        if file.content_type not in allowed_types:
+            raise HTTPException(status_code=400, detail=f"Invalid image format: {file.content_type}. Allowed: jpeg, png, webp")
+
+        logger.info(f"Diagnosis request - file: {file.filename}, language: {language}, plant_type: {plant_type}")
+
+        diagnosis_id = str(uuid.uuid4())
+        crop = plant_type or "Unknown plant"
+
         return {
-            "status": "processing",
-            "message": "Pipeline implementation pending"
+            "diagnosis_id": diagnosis_id,
+            "disease_name": f"Leaf Blight (Demo — AI pipeline not yet connected)",
+            "confidence_score": 0.72,
+            "severity_level": "medium",
+            "symptoms": [
+                "Brown or yellow spots on leaves",
+                "Wilting edges",
+                "Discoloration spreading from leaf tip"
+            ],
+            "treatment_recommendations": [
+                "Remove and destroy infected plant parts",
+                "Apply copper-based fungicide every 7–10 days",
+                "Avoid overhead irrigation to reduce leaf wetness",
+                "Ensure adequate spacing for airflow between plants"
+            ],
+            "preventive_measures": [
+                "Use disease-resistant varieties",
+                "Rotate crops each season",
+                "Keep field free of plant debris after harvest"
+            ],
+            "farmer_friendly_explanation": (
+                f"Your {crop} image was received and processed. "
+                "This is a placeholder result — the full AI vision model and LLM pipeline "
+                "will replace this with a real diagnosis once connected. "
+                "The interface and data flow are working correctly."
+            ),
+            "audio_available": False,
+            "language": language,
+            "timestamp": datetime.now().isoformat()
         }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Diagnosis endpoint error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -70,7 +104,37 @@ async def diagnose_text(
     """Text-based diagnosis endpoint."""
     try:
         logger.info(f"Text diagnosis request: {description}")
-        return {"status": "processing", "message": "Text pipeline implementation pending"}
+        diagnosis_id = str(uuid.uuid4())
+        crop = plant_type or "Unknown plant"
+
+        return {
+            "diagnosis_id": diagnosis_id,
+            "disease_name": "Powdery Mildew (Demo — AI pipeline not yet connected)",
+            "confidence_score": 0.65,
+            "severity_level": "low",
+            "symptoms": [
+                "White powdery coating on leaves",
+                "Yellowing around affected areas",
+                "Stunted new growth"
+            ],
+            "treatment_recommendations": [
+                "Apply neem oil or potassium bicarbonate spray",
+                "Remove heavily infected leaves",
+                "Improve air circulation around plants"
+            ],
+            "preventive_measures": [
+                "Avoid over-fertilizing with nitrogen",
+                "Water at base of plant, not on foliage",
+                "Plant resistant varieties"
+            ],
+            "farmer_friendly_explanation": (
+                f"Your symptom description for {crop} was received. "
+                "This is a placeholder result — the LLM text analysis pipeline will replace this once connected."
+            ),
+            "audio_available": False,
+            "language": language,
+            "timestamp": datetime.now().isoformat()
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -28,12 +28,13 @@
         <div class="file-upload">
           <input
             type="file"
+            id="file-input"
             ref="fileInput"
             accept="image/*"
             @change="onFileSelected"
             class="file-input"
           />
-          <label for="file-input" class="upload-label">
+          <label class="upload-label" @click.prevent="fileInput.click()">
             <span v-if="!selectedFile">{{ t('diagnosis.uploadPrompt') }}</span>
             <span v-else>{{ selectedFile.name }}</span>
           </label>
@@ -104,6 +105,7 @@ const { t, language, languageOptions } = useI18n()
 
 const activeTab = ref('image')
 const selectedLanguage = ref(language.value)
+const fileInput = ref(null)
 const selectedFile = ref(null)
 const imagePreview = ref(null)
 const plantType = ref('')
