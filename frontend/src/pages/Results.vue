@@ -144,7 +144,12 @@ const diagnosis = ref(parseQuery(route.query))
 // Re-fetch translated content whenever the global language changes
 watch(language, async (newLang) => {
   try {
-    const response = await diagnosisService.retranslateDiagnosis(diagnosisType, newLang)
+    const response = await diagnosisService.retranslateDiagnosis(
+      diagnosisType,
+      newLang,
+      diagnosis.value.disease_name_en || null,
+      diagnosis.value.plant_type || null,
+    )
     // Preserve id and type, update translated fields
     diagnosis.value = {
       ...diagnosis.value,

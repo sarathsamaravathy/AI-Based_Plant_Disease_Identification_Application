@@ -45,6 +45,7 @@ Used for image classification from leaf photos:\par
 - Applies preprocessing\par
 - Predicts disease class and confidence\par
 - Passes result to LLM layer for explanation text\par
+- Can load a local trained checkpoint or bootstrap one from a pretrained Hugging Face model\par
 \par
 \pard\b MLflow (MLOps tracking)\b0\par
 Used for operational tracking of ML behavior:\par
@@ -80,6 +81,13 @@ The script supports either of these layouts:\par
 - data/raw/PlantVillage/train/<class_name>/... and data/raw/PlantVillage/val/<class_name>/...\par
 - data/raw/PlantVillage/<class_name>/... for automatic 80/20 split\par
 \par
+\pard\b Quick alternative before training your own model\b0\par
+If you do not want to train immediately, you can bootstrap a pretrained PlantVillage model from Hugging Face:\par
+- python scripts/download_pretrained_model.py\par
+This downloads BrandonFors/effnetv2_s_plant_disease and converts it into:\par
+- models/vision/plant_disease.pt\par
+Once this file exists, the backend stops using the demo diagnosis path.\par
+\par
 \pard\b Step 2: Run one command to train and export the checkpoint\b0\par
 From the project root, run:\par
 - python scripts/train_plant_disease.py --data-dir data/raw/PlantVillage\par
@@ -105,6 +113,7 @@ Optionally set the backbone:\par
 Run backend:\par
 - uvicorn src.api.main:app --reload\par
 At startup, API should auto-load checkpoint through VisionModel.load(path).\par
+If no local checkpoint exists and AUTO_DOWNLOAD_PRETRAINED_MODEL=true in .env, the backend will try to download the pretrained Hugging Face model automatically and convert it to the local checkpoint format.\par
 \par
 \pard\b Step 5: Verify model is active\b0\par
 Send a test image to /api/v1/diagnose.\par
@@ -143,6 +152,8 @@ MLOps is implemented as a practical loop:\par
 - .gitignore\par
 - src/api/main.py\par
 - src/vision/model.py\par
+- src/vision/hf_loader.py\par
+- scripts/download_pretrained_model.py\par
 - scripts/train_plant_disease.py\par
 - src/llm/engine.py\par
 - src/database/models.py\par
