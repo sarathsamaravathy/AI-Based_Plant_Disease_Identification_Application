@@ -1,349 +1,146 @@
 {\rtf1\ansi\deff0
-{\rtf1\ansi\ansicpg1252\deff0
-{\fonttbl{\f0\fswiss\fprq2 Segoe UI;}{\f1\fswiss\fprq2 Arial;}{\f2\fmodern\fprq1 Courier New;}}
-{\colortbl;\red0\green0\blue0;\red0\green70\blue127;\red34\green139\blue34;\red180\green0\blue0;}
-\paperw12240\paperh15840\margl1440\margr1440\margt1080\margb1080
-
-\pard\qc\f0\fs40\b\cf2 AI-Based Plant Disease Identification Application\b0\cf1\par
-\pard\qc\fs24\i Technical Documentation for Instructor Review\i0\par
+{\fonttbl{\f0\fnil Segoe UI;}}
+\viewkind4\uc1
+\pard\qc\b\f0\fs36 AI-Based Plant Disease Identification Application\b0\fs24\par
+\pard\qc\fs20 Project Documentation\par
 \pard\fs20\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 1. Project Overview\b0\cf1\par
-\pard\fs20\par
-\pard\fs22 This application provides AI-driven plant disease diagnosis for farmers across India. A farmer photographs a diseased leaf or describes symptoms in text, selects their preferred language from nine Indian languages, and receives a diagnosis with treatment recommendations in that language. The system combines a convolutional neural network (CNN) for leaf image classification, a locally-running large language model (LLM) for generating farmer-friendly explanations, a PostgreSQL database for persistent storage, and a Vue 3 web frontend.\par
-\pard\fs22\par
-\pard\fs22 The architecture is designed for real-world deployment on low-cost on-premise hardware in rural areas, which drives the choice of technologies described in this document.\par
-\pard\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 2. System Architecture\b0\cf1\par
-\pard\fs20\par
-\pard\f2\fs18\cf3
-+---------------------+        HTTP/JSON         +---------------------+\par
-|   Vue 3 Frontend    | <----------------------> |   FastAPI Backend   |\par
-|  (Vite dev server)  |   multipart/form-data    |  (uvicorn ASGI)     |\par
-+---------------------+                          +----------+----------+\par
-                                                            |\par
-              +---------------------------------------------+\par
-              |                     |                       |\par
-    +---------+--------+  +---------+-------+  +-----------+--------+\par
-    |  VisionModel     |  |  DiagnosisEngine|  |  PostgreSQL DB     |\par
-    |  (EfficientNet   |  |  (Ollama LLM    |  |  (SQLAlchemy ORM)  |\par
-    |   PyTorch)       |  |   HTTP client)  |  |                    |\par
-    +------------------+  +-----------------+  +--------------------+\par
-              |                     |\par
-    +---------+--------+  +---------+---------+\par
-    |  MLflow Tracking |  |  Translator stub   |\par
-    |  (experiment log)|  |  (IndicNLP/AI4B)   |\par
-    +------------------+  +--------------------+\par
-\cf1\f0\fs22\par
-\pard\fs22 The backend starts as a single uvicorn process. On startup it checks for a saved model checkpoint file and a running Ollama service. If both are present the full AI pipeline is active. If either is absent the backend falls back to curated multilingual demo responses so the frontend remains fully functional during development.\par
-\pard\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 3. Technology Stack and Design Rationale\b0\cf1\par
-\pard\fs20\par
-
-\pard\fs24\b 3.1  FastAPI (Python)\b0\par
-\pard\fs22 FastAPI is chosen over Flask or Django REST Framework for three reasons. First, it generates an OpenAPI specification and interactive Swagger UI automatically at /docs, which lets any developer test every endpoint without writing extra code. Second, it is built on ASGI (asyncio) so file upload handling and downstream HTTP calls to Ollama do not block the server thread pool. Third, Pydantic model validation catches malformed inputs at the boundary before they reach the inference pipeline.\par
-\pard\fs24\par
-
-\pard\fs24\b 3.2  Vue 3 + Vite Frontend\b0\par
-\pard\fs22 Vue 3 Composition API is used for the frontend. The custom useI18n composable holds a module-level reactive ref for the currently selected language. All components read from this singleton so a single language change propagates to every part of the UI instantly without a page reload. Vite is used as the build tool because it starts the dev server in under one second and performs hot module replacement, which is important for rapid iteration on UI translations.\par
-\pard\fs24\par
-
-\pard\fs24\b 3.3  Why PostgreSQL and not SQLite\b0\par
-\pard\fs22 SQLite is sufficient for a single-developer prototype running one process. This application is designed with the following production requirements that make PostgreSQL necessary:\par
+\pard\b 1. System Overview\b0\par
+This project is a multilingual plant disease diagnosis web application with a Vue frontend and a FastAPI backend.\par
+Farmers can upload a leaf image or enter symptom text, choose their output language, and get disease details with recommendations.\par
 \par
-\pard\li720\fs22\bullet \b ACID-compliant concurrent writes\b0 : When multiple API workers run in parallel (uvicorn --workers 4), SQLite's file-level locking causes write conflicts on the diagnosis and feedback tables. PostgreSQL uses row-level locking, so concurrent writes to different records never block each other.\par
+\pard\b 2. Architecture Components and Their Use\b0\par
 \par
-\bullet \b JSONB column indexing\b0 : The DiagnosisRecord model stores symptoms, treatment_recommendations, and preventive_measures as JSON arrays. PostgreSQL's JSONB type compresses these and allows GIN indexes, making it possible to query all diagnoses that contain a specific symptom keyword efficiently. SQLite stores JSON as plain text and cannot index inside the array.\par
+\pard\b Frontend (Vue 3 + Vite)\b0\par
+Used for farmer interaction:\par
+- Upload image or enter symptom text\par
+- Select output language\par
+- View diagnosis results\par
+- Submit feedback\par
 \par
-\bullet \b Full-text search for feedback analysis\b0 : The FeedbackRecord stores open-ended user notes in a Text column. PostgreSQL's built-in tsvector / tsquery enables full-text search over these notes to identify common farmer complaints without an external search engine.\par
+\pard\b Backend API (FastAPI)\b0\par
+Used as orchestration layer:\par
+- Validates requests and files\par
+- Runs image inference if a trained model exists\par
+- Calls LLM layer for natural language explanation\par
+- Stores diagnosis and feedback data\par
+- Returns response in frontend-ready JSON\par
 \par
-\bullet \b Read replicas for scale\b0 : As more farming communities adopt the application, the read load from the history page will outpace write load. PostgreSQL supports streaming replication so a read replica can serve history queries while the primary handles writes.\par
+\pard\b PostgreSQL (What it is used for in this architecture)\b0\par
+PostgreSQL is the persistent data store. In this system it is used to:\par
+- Save diagnosis records (disease, confidence, symptoms, recommendations, language, timestamp)\par
+- Save user feedback records linked to each diagnosis\par
+- Support the History page and analytics\par
+- Build retraining datasets from real user outcomes\par
 \par
-\bullet \b SQLAlchemy abstraction\b0 : The ORM layer in src/database/ is written against SQLAlchemy's generic dialect. Switching from PostgreSQL back to SQLite for a local test requires only changing the DATABASE_URL environment variable. No application code changes are needed.\par
-\pard\fs24\par
-
-\pard\fs24\b 3.4  Why Ollama for the LLM\b0\par
-\pard\fs22 The LLM component generates farmer-friendly explanations from the raw vision model output. This is a natural language generation task. Ollama is chosen as the LLM runtime for the following reasons:\par
+\pard\b Ollama (What it is used for in this architecture)\b0\par
+Ollama is the local LLM runtime. In this system it is used to:\par
+- Convert model output into farmer-friendly explanation text\par
+- Generate structured treatment and preventive suggestions\par
+- Keep language generation local on device/server (no mandatory cloud call)\par
+- Enable model swapping (example: llama3, mistral) through configuration\par
 \par
-\pard\li720\fs22\bullet \b Complete data privacy\b0 : Farmer photographs and crop data are sensitive agricultural information. Sending them to a cloud API such as OpenAI or Google Gemini means the data leaves the farmer's local infrastructure. Ollama runs entirely on the local server. No data ever leaves the premises.\par
+\pard\b Vision Model (PyTorch wrapper)\b0\par
+Used for image classification from leaf photos:\par
+- Reads uploaded image\par
+- Applies preprocessing\par
+- Predicts disease class and confidence\par
+- Passes result to LLM layer for explanation text\par
 \par
-\bullet \b No API key or subscription cost\b0 : Rural deployment targets government agricultural extension offices and farmer cooperatives that may not have budget for cloud API subscriptions. Ollama requires a one-time model download (ollama pull llama3) and has no recurring cost.\par
+\pard\b MLflow (MLOps tracking)\b0\par
+Used for operational tracking of ML behavior:\par
+- Log inference parameters\par
+- Log confidence and latency metrics\par
+- Tag runs with diagnosis id and pipeline mode\par
+- Link feedback outcomes to monitored runs\par
 \par
-\bullet \b Runs on CPU-only hardware\b0 : Quantized models such as llama3:8b-q4_0 require approximately 5 GB of RAM and run at usable speed on a CPU-only server. This is important for deployment on low-cost hardware that does not have a discrete GPU.\par
+\pard\b 3. Current Runtime Flow (Image Diagnosis)\b0\par
+1. User uploads image and selects language in frontend.\par
+2. Frontend sends multipart request to POST /api/v1/diagnose.\par
+3. Backend validates file type and metadata.\par
+4. If trained checkpoint exists, backend runs VisionModel inference.\par
+5. Backend calls Ollama engine for farmer-friendly explanation and recommendations.\par
+6. Backend logs run metadata to MLflow.\par
+7. Backend stores diagnosis record in PostgreSQL.\par
+8. Backend returns diagnosis JSON to frontend.\par
+9. Frontend shows result and allows feedback submission.\par
+10. Feedback is stored and associated with diagnosis for future model improvement.\par
 \par
-\bullet \b Model interchangeability\b0 : The LLM model is configured through the LLM_MODEL environment variable. Switching from llama3 to mistral or phi3 requires only a one-line .env change and an ollama pull command. The DiagnosisEngine class does not need to be modified.\par
+\pard\b 4. Language Handling\b0\par
+The system supports multiple Indian languages in UI and result content:\par
+- UI labels come from frontend translation packs\par
+- Diagnosis content can be retranslated through API endpoint\par
+- Results page updates when user changes language\par
 \par
-\bullet \b Structured JSON output\b0 : Ollama supports a format="json" parameter that constrains the model to emit valid JSON, which the DiagnosisEngine then parses directly into treatment_recommendations, preventive_measures, and urgency fields.\par
-\pard\fs24\par
-\pard\fs22 The DiagnosisEngine in src/llm/engine.py builds a chain-of-thought prompt that instructs the model to think step-by-step before producing a structured JSON response. If Ollama is unreachable at inference time, the engine returns a static fallback message and logs a warning. The API endpoint never returns a 500 error because of an LLM failure.\par
-\pard\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 4. Vision Model: CNN Pipeline\b0\cf1\par
-\pard\fs20\par
-
-\pard\fs24\b 4.1  Architecture\b0\par
-\pard\fs22 The vision model (src/vision/model.py) is a PyTorch image classifier built on top of a pretrained EfficientNet-V2-S backbone from torchvision. The final classification head is replaced with a linear layer of output dimension 38, corresponding to the 38 plant-disease classes in the PlantVillage dataset. An alternative ViT-B16 (Vision Transformer) backbone is also supported and can be selected by setting VISION_MODEL=vit_b16 in the environment.\par
+\pard\b 5. Step-by-Step: How to Add a Trained Model to This App\b0\par
 \par
-\pard\fs22 The PlantVillage dataset contains 54,000 leaf images across 14 crop species and 26 disease conditions plus healthy samples. The 38-class taxonomy used in this application is the standard split used in academic benchmarks, where a class is identified as <CropName>___<DiseaseCondition> (e.g. Tomato___Early_blight, Corn_(maize)___healthy).\par
-\pard\fs24\par
-
-\pard\fs24\b 4.2  Preprocessing Pipeline\b0\par
-\pard\fs22 Raw image bytes from the HTTP upload pass through the following transforms before inference:\par
+\pard\b Step 1: Train and export checkpoint\b0\par
+Train your classifier externally (for example on PlantVillage classes) and save a PyTorch checkpoint using the same architecture family expected by VisionModel.\par
+The checkpoint should include model_state, model_name, and num_classes.\par
 \par
-\pard\li720\fs22 1. PIL Image.open() converts the bytes into an RGB image object.\par
-2. Resize to 224x224 pixels (the input size expected by both EfficientNet-V2-S and ViT-B16).\par
-3. ToTensor() converts the H x W x C uint8 array to a C x H x W float32 tensor in the range [0, 1].\par
-4. Normalize with ImageNet statistics: mean [0.485, 0.456, 0.406], std [0.229, 0.224, 0.225]. This is required because the pretrained backbone weights were learned with this normalisation.\par
-5. unsqueeze(0) adds the batch dimension: shape becomes (1, 3, 224, 224).\par
-\pard\fs24\par
-
-\pard\fs24\b 4.3  Inference Output\b0\par
-\pard\fs22 VisionModel.predict() returns two tensors: logits of shape (1, 38) and softmax probabilities of shape (1, 38). The predict_class() helper extracts the argmax index, looks it up in the DISEASE_CLASSES list, and returns the disease name string together with the confidence probability. This string is then passed directly to the DiagnosisEngine as the disease_name argument.\par
-\pard\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 5. How to Connect a Trained Model\b0\cf1\par
-\pard\fs20\par
-
-\pard\fs22 The following procedure connects a trained checkpoint to the live API without modifying any application code.\par
+\pard\b Step 2: Place checkpoint in project\b0\par
+Create folder if needed:\par
+- models/vision/\par
+Copy your file, example:\par
+- models/vision/plant_disease.pt\par
 \par
-\pard\li720\fs22\b Step 1 - Train the model\b0\par
-Download the PlantVillage dataset (available on Kaggle: plantvillage-dataset). Split into 80% train / 10% validation / 10% test. Fine-tune EfficientNet-V2-S with 38 output classes using transfer learning. A standard PyTorch training loop with CrossEntropyLoss and Adam optimizer achieves >95% test accuracy in approximately 20 epochs on a GPU.\par
+\pard\b Step 3: Configure environment\b0\par
+Set environment variable in .env:\par
+- VISION_MODEL_PATH=./models/vision/plant_disease.pt\par
+Optionally set:\par
+- VISION_MODEL=efficientnet_v2_s\par
 \par
-\b Step 2 - Save the checkpoint\b0\par
-At the end of training, call VisionModel.save(path) on the trained instance. This writes a dictionary containing the model_state_dict, model_name, and num_classes to a .pt file:\par
+\pard\b Step 4: Start backend\b0\par
+Run backend:\par
+- uvicorn src.api.main:app --reload\par
+At startup, API should auto-load checkpoint through VisionModel.load(path).\par
 \par
-\pard\li1440\f2\fs18 model = VisionModel(model_name="efficientnet_v2_s", num_classes=38, pretrained=True)\par
-# ... training loop ...\par
-model.save("./models/vision/plant_disease.pt")\par
-\pard\li720\f0\fs22\par
-\b Step 3 - Place the checkpoint file\b0\par
-Copy the .pt file to the path defined by the VISION_MODEL_PATH environment variable. The default path is ./models/vision/plant_disease.pt relative to the project root. Create the directory first:\par
+\pard\b Step 5: Verify model is active\b0\par
+Send a test image to /api/v1/diagnose.\par
+Check response field pipeline_mode:\par
+- real_vision or real_vision_llm means trained model path is active\par
+- mock means checkpoint was not loaded and fallback path is running\par
 \par
-\pard\li1440\f2\fs18 mkdir -p models/vision\par
-cp /path/to/trained/plant_disease.pt ./models/vision/plant_disease.pt\par
-\pard\li720\f0\fs22\par
-\b Step 4 - Restart the backend\b0\par
-On next uvicorn startup the startup_event handler detects the checkpoint file and calls VisionModel.load(path). The loaded model replaces the mock data path. Requests to POST /api/v1/diagnose will now run real inference. The log will show:\par
+\pard\b Step 6: Enable LLM explanation path\b0\par
+Ensure Ollama is running and model is pulled:\par
+- ollama pull llama3\par
+- ollama serve\par
+Set in .env if needed:\par
+- LLM_API_URL=http://localhost:11434\par
+- LLM_MODEL=llama3\par
+Then restart backend.\par
 \par
-\pard\li1440\f2\fs18 INFO: Vision model loaded from ./models/vision/plant_disease.pt\par
-\pard\li720\f0\fs22\par
-\b Step 5 - Verify\b0\par
-The JSON response from /api/v1/diagnose will include "pipeline_mode": "real_vision" (or "real_vision_llm" if Ollama is also active). If the field shows "mock" the checkpoint was not found.\par
+\pard\b Step 7: Validate end-to-end\b0\par
+- Upload sample leaf image from frontend\par
+- Confirm disease, confidence, recommendations, explanation are returned\par
+- Switch language in results page and verify retranslation flow\par
 \par
-\b Optional: swap the architecture\b0\par
-To use the ViT-B16 backbone instead of EfficientNet, set VISION_MODEL=vit_b16 in the environment and retrain. The VisionModel class handles both architectures automatically through the model_name field stored in the checkpoint.\par
-\pard\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 6. MLOps Implementation\b0\cf1\par
-\pard\fs20\par
-
-\pard\fs24\b 6.1  What MLOps Means in This System\b0\par
-\pard\fs22 MLOps (Machine Learning Operations) is the set of practices that manage the lifecycle of a machine learning model from training through deployment and continued improvement. In this application MLOps covers four areas: experiment tracking, model versioning, inference monitoring, and a feedback loop for retraining.\par
-\pard\fs24\par
-
-\pard\fs24\b 6.2  Experiment Tracking with MLflow\b0\par
-\pard\fs22 Every inference request to /api/v1/diagnose is logged as an MLflow run in the plant_disease_diagnosis experiment. The following data is recorded:\par
+\pard\b Step 8: Persist and monitor\b0\par
+- Confirm diagnosis and feedback rows are written in PostgreSQL\par
+- Open MLflow UI and verify run metrics are logged\par
 \par
-\pard\li720\fs22\bullet \b Parameters\b0 : model path (or "mock"), language code, plant_type, confidence threshold from config.\par
-\bullet \b Metrics\b0 : confidence_score (the softmax probability of the top-1 prediction), latency_ms (end-to-end inference time from request receipt to response).\par
-\bullet \b Tags\b0 : diagnosis_id (UUID), disease name predicted, pipeline_mode (mock / real_vision / real_vision_llm).\par
-\pard\fs22\par
-MLflow runs are stored locally in the ./mlruns directory by default. To view the tracking UI, run:\par
+\pard\b Step 9: Improve model continuously\b0\par
+Use incorrect feedback cases as hard examples for retraining, generate a new checkpoint, replace the checkpoint file, and redeploy backend.\par
 \par
-\pard\li720\f2\fs18 mlflow ui --port 5000\par
-\pard\f0\fs22\par
-Then open http://localhost:5000 in a browser. Each run appears as a row in the experiment table. Clicking a run shows the full parameter, metric, and tag values for that prediction.\par
+\pard\b 6. MLOps in This Project\b0\par
+MLOps is implemented as a practical loop:\par
+1. Inference runs are logged (parameters + metrics).\par
+2. User feedback is stored with diagnosis link.\par
+3. Low-confidence and incorrect predictions are collected.\par
+4. Model is retrained using new data.\par
+5. New checkpoint is deployed and monitored again.\par
 \par
-To use a remote tracking server (e.g. on a team MLflow instance), set MLFLOW_TRACKING_URI=http://your-mlflow-server:5000 in the environment before starting uvicorn. No code change is needed.\par
-\pard\fs24\par
-
-\pard\fs24\b 6.3  Model Versioning\b0\par
-\pard\fs22 The VisionModel.save() and VisionModel.load() methods store the model_name and num_classes alongside the state_dict inside the .pt checkpoint. This means any loaded checkpoint is self-describing: the API can verify that the loaded model has the expected 38 output classes and the expected architecture without hard-coding these values in the API layer. When a retrained model is ready, the old checkpoint is replaced and the API is restarted. The loaded architecture is determined from the checkpoint, not from a configuration file, so there is no risk of a mismatch between a config value and the actual saved weights.\par
-\pard\fs24\par
-
-\pard\fs24\b 6.4  Feedback Loop and RLHF-Style Retraining\b0\par
-\pard\fs22 After a farmer receives a diagnosis, the Results page offers two feedback questions: "Was the diagnosis correct?" and "Were the recommendations helpful?" When the farmer responds, the frontend calls POST /api/v1/feedback with the diagnosis_id and the boolean answers. The backend stores this record in the FeedbackRecord table in PostgreSQL and also tags the corresponding MLflow run with the feedback values.\par
+\pard\b 7. Key Files\b0\par
+- src/api/main.py\par
+- src/vision/model.py\par
+- src/llm/engine.py\par
+- src/database/models.py\par
+- frontend/src/services/api.js\par
+- frontend/src/pages/DiagnosisPage.vue\par
+- frontend/src/pages/Results.vue\par
 \par
-This creates a labelled dataset of (image, prediction, human_correctness_label) triples that can be exported from the database and used to fine-tune or retrain the model. Diagnoses labelled as incorrect by farmers represent hard negative examples that the model failed on; these are the highest-value samples for the next training iteration. This pattern is analogous to Reinforcement Learning from Human Feedback (RLHF) used in large language model fine-tuning.\par
-\pard\fs24\par
-
-\pard\fs24\b 6.5  Inference Monitoring and Drift Detection\b0\par
-\pard\fs22 The application is configured for data drift monitoring through the enable_drift_monitoring flag in src/config.py. Drift monitoring means comparing the statistical distribution of input images (or prediction confidence scores) over time against the distribution seen during training. If the average confidence score drops significantly over a rolling window of requests, it indicates that incoming images are out-of-distribution relative to the training set, which is an early warning that the model should be retrained.\par
-\par
-The latency_ms metric logged to MLflow for every request serves as a performance drift signal: a sudden increase in average latency indicates that image uploads are getting larger or the preprocessing pipeline has a bottleneck.\par
-\pard\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 7. Complete Request Lifecycle\b0\cf1\par
-\pard\fs20\par
-\pard\fs22 The following describes the full path of a single image diagnosis request from the farmer's browser to the database and back:\par
-\par
-\pard\li720\fs22 1. The farmer opens http://localhost:5173/diagnose in their browser. The Vue app loads. The language preference from localStorage is applied to all UI labels.\par
-\par
-2. The farmer selects a leaf photo from their device and chooses their language (e.g. Tamil). They click Diagnose.\par
-\par
-3. DiagnosisPage.vue calls diagnosisService.diagnoseImage(file, language, plantType). The api.js service sends a multipart/form-data POST request to http://localhost:8000/api/v1/diagnose.\par
-\par
-4. The FastAPI endpoint receives the upload. It validates the content-type against the allowed list (jpeg, png, webp). An invalid type receives a 400 response immediately.\par
-\par
-5. If a vision model checkpoint is loaded, VisionModel.preprocess_image() converts the image bytes to a normalised tensor. VisionModel.predict() runs a forward pass through EfficientNet-V2-S. predict_class() extracts the top-1 prediction and confidence.\par
-\par
-6. The disease name and confidence are passed to DiagnosisEngine.generate_diagnosis(). The engine builds a chain-of-thought prompt and sends it to the local Ollama server via HTTP POST /api/generate. Ollama returns structured JSON with farmer_explanation, treatment_steps, preventive_measures, and urgency.\par
-\par
-7. The diagnosis result is saved to the diagnoses table in PostgreSQL via SQLAlchemy. The diagnosis_id UUID is the primary key.\par
-\par
-8. The result is logged to MLflow: confidence_score and latency_ms as metrics, diagnosis_id and disease name as tags.\par
-\par
-9. The backend returns a JSON response containing diagnosis_id, disease_name, confidence_score, symptoms, treatment_recommendations, preventive_measures, farmer_friendly_explanation, language, and pipeline_mode.\par
-\par
-10. The frontend navigates to /results and passes the response fields as route query parameters. Results.vue renders the diagnosis content in the selected language.\par
-\par
-11. If the farmer changes the language on the Results page, the Vue watch() on the language ref fires. It calls diagnosisService.retranslateDiagnosis(diagnosisType, newLanguage), which hits GET /api/v1/diagnose/retranslate. The displayed content updates instantly without re-uploading the image.\par
-\par
-12. The farmer submits feedback. POST /api/v1/feedback stores the FeedbackRecord in PostgreSQL and tags the MLflow run.\par
-\pard\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 8. Multilingual Architecture\b0\cf1\par
-\pard\fs20\par
-\pard\fs22 The application supports nine languages: English, Hindi, Tamil, Telugu, Kannada, Malayalam, Marathi, Gujarati, and Bengali. Multilingual support is implemented at two independent layers:\par
-\par
-\pard\li720\fs22\b Frontend UI translations\b0 : The file frontend/src/i18n/translations.js contains a complete translation pack for every language. Each pack is a nested object keyed by section (app, nav, home, diagnosis, results, history). The useI18n composable exposes a t() function that resolves a dot-path key (e.g. "results.treatmentRecommendations") to the string in the active language. All component templates use t() for every visible label, so a language change instantly updates the entire UI.\par
-\par
-\b Backend content translation\b0 : Diagnosis content (disease names, symptom lists, treatment steps) is generated in the language specified by the request parameter. When Ollama is active, the LLM prompt includes the target language and the model generates text directly in that language. When mock data is used, the MOCK_IMAGE_DIAGNOSIS and MOCK_TEXT_DIAGNOSIS dictionaries provide pre-written content in all nine languages.\par
-\par
-\b Real-time retranslation\b0 : When the farmer changes language on the Results page after a diagnosis has already been returned, the frontend calls GET /api/v1/diagnose/retranslate with the diagnosis_type and new language. The backend returns the content for that language and the Vue watch() handler updates the displayed results without requiring a new image upload.\par
-\par
-\b Future translation backend\b0 : src/multilingual/translator.py defines a Translator class that is the integration point for a real translation service such as AI4Bharat IndicTrans2. The translate() method currently returns the original text as a stub. Replacing the method body with a call to the IndicTrans2 model will enable cross-language translation of free-form LLM output.\par
-\pard\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 9. Database Schema\b0\cf1\par
-\pard\fs20\par
-\pard\fs24\b DiagnosisRecord (table: diagnoses)\b0\par
-\pard\li720\fs22\bullet id (String, UUID, primary key)\par
-\bullet user_id (String, nullable)\par
-\bullet detected_disease (String, max 100 chars)\par
-\bullet confidence_score (Float)\par
-\bullet symptoms_detected (JSON array)\par
-\bullet severity_level (String: low / medium / high)\par
-\bullet treatment_recommendations (JSON array)\par
-\bullet preventive_measures (JSON array)\par
-\bullet target_language (String, 2-character code)\par
-\bullet created_at, updated_at (DateTime, auto-managed)\par
-\pard\fs24\par
-\pard\fs24\b FeedbackRecord (table: feedback)\b0\par
-\pard\li720\fs22\bullet id (String, UUID, primary key)\par
-\bullet diagnosis_id (String, foreign key to diagnoses.id)\par
-\bullet user_id (String, nullable)\par
-\bullet diagnosis_correct (Boolean): was the AI prediction correct?\par
-\bullet recommendation_helpful (Boolean): did the treatment advice help?\par
-\bullet user_notes (Text): open-ended comments from the farmer\par
-\bullet created_at (DateTime, auto-managed)\par
-\pard\fs22\par
-The separation of DiagnosisRecord and FeedbackRecord means diagnosis data is never mutated after it is written. Feedback is appended as a separate row linked by diagnosis_id. This makes it straightforward to export training data: JOIN diagnoses d ON feedback f WHERE f.diagnosis_correct = false gives all images the model got wrong, ready for a retraining dataset.\par
-\pard\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 10. API Reference\b0\cf1\par
-\pard\fs20\par
-\pard\li720\fs22\bullet \b GET /health\b0 : Returns \{"status": "healthy", "timestamp": "..."\}\par
-\bullet \b POST /api/v1/diagnose\b0 : Multipart form upload. Fields: file (image), language (default "en"), plant_type (optional). Returns full diagnosis JSON including diagnosis_id.\par
-\bullet \b POST /api/v1/diagnose/text\b0 : Query params: description (string), language, plant_type. Returns diagnosis JSON.\par
-\bullet \b GET /api/v1/diagnose/retranslate\b0 : Query params: diagnosis_type ("image" or "text"), language. Returns content in the requested language without re-running inference.\par
-\bullet \b GET /api/v1/languages\b0 : Returns the supported language code to name mapping.\par
-\bullet \b POST /api/v1/feedback\b0 : Query params: diagnosis_id. Body: JSON with diagnosis_correct (bool), recommendation_helpful (bool), notes (string).\par
-\pard\fs22\par
-Full interactive documentation is available at http://localhost:8000/docs when the backend is running.\par
-\pard\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 11. Configuration Reference\b0\cf1\par
-\pard\fs20\par
-\pard\fs22 All settings in src/config.py are read from environment variables. Create a .env file in the project root to override defaults.\par
-\par
-\pard\li720\f2\fs18 DATABASE_URL=postgresql://farmer:password@localhost:5432/plant_disease_db\par
-LLM_MODEL=llama3\par
-LLM_API_URL=http://localhost:11434\par
-VISION_MODEL_PATH=./models/vision/plant_disease.pt\par
-MLFLOW_TRACKING_URI=./mlruns\par
-ALLOWED_ORIGINS=http://localhost:5173\par
-\pard\f0\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 12. How to Run\b0\cf1\par
-\pard\fs20\par
-\pard\fs24\b Backend\b0\par
-\pard\li720\f2\fs18 python -m venv venv\par
-venv\\Scripts\\activate          # Windows\par
-pip install --prefer-binary -r requirements.txt\par
-uvicorn src.api.main:app --reload\par
-\pard\f0\fs24\par
-\pard\fs24\b Frontend\b0\par
-\pard\li720\f2\fs18 cd frontend\par
-npm install\par
-npm run dev\par
-\pard\f0\fs24\par
-\pard\fs24\b Ollama (LLM)\b0\par
-\pard\li720\f2\fs18 ollama pull llama3\par
-ollama serve          # starts on http://localhost:11434\par
-\pard\f0\fs24\par
-\pard\fs24\b PostgreSQL (Docker)\b0\par
-\pard\li720\f2\fs18 docker-compose up -d postgres\par
-\pard\f0\fs24\par
-\pard\fs24\b MLflow UI\b0\par
-\pard\li720\f2\fs18 mlflow ui --port 5000          # open http://localhost:5000\par
-\pard\f0\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 13. Deployment Considerations\b0\cf1\par
-\pard\fs20\par
-\pard\li720\fs22\bullet The Dockerfile in the project root builds a production image for the FastAPI backend.\par
-\bullet docker-compose.yml orchestrates the backend, a PostgreSQL instance, and (optionally) an Ollama container.\par
-\bullet For GPU inference, change the DEVICE environment variable to "cuda" and mount the GPU in the Docker run flags.\par
-\bullet The secret_key in config.py must be changed to a cryptographically random string before any public deployment.\par
-\bullet ALLOWED_ORIGINS must be restricted to the actual domain of the frontend in production (not the wildcard used during development).\par
-\pard\fs24\par
-
-{\pard\qc\fs18 ----------------------------------------------------------------\par}
-
-\pard\fs24\par
-\pard\f0\fs28\b\cf2 14. Summary\b0\cf1\par
-\pard\fs20\par
-\pard\fs22 This application is a complete, end-to-end designed system for AI-driven plant disease diagnosis. Every technology choice — FastAPI, PostgreSQL, Ollama, EfficientNet-V2-S, MLflow, Vue 3 — is motivated by real deployment constraints for rural agricultural use. The inference pipeline has a clean fallback chain so the system degrades gracefully when individual components (vision model file, Ollama, database) are unavailable, ensuring the frontend is always accessible. The MLOps layer captures every prediction and the farmer's feedback, creating a continuously growing labelled dataset that can be used to retrain and improve the model over time.\par
-\pard\fs20\par
+\pard\b 8. Conclusion\b0\par
+This architecture separates UI, inference, language generation, persistence, and operations tracking.\par
+PostgreSQL is used for persistent diagnosis and feedback data.\par
+Ollama is used for local LLM explanation and recommendation generation.\par
+The trained model can be connected by placing a compatible checkpoint and updating environment configuration, without changing frontend behavior.\par
 }
