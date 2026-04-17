@@ -24,6 +24,20 @@ Before installing, ensure you have the following:
 - **Git** (for cloning the repository)
 - **Docker & Docker Compose** (optional, for containerized deployment)
 
+### Windows Docker requirement (important)
+
+If you want to run with Docker on Windows, install and start Docker Desktop first.
+
+1. Install Docker Desktop: https://www.docker.com/products/docker-desktop/
+2. Open Docker Desktop and wait until it shows Engine running.
+3. In PowerShell, verify Docker server is reachable:
+
+```bash
+docker info
+```
+
+If `docker info` shows a pipe error like `dockerDesktopLinuxEngine`, Docker Desktop/WSL is not running yet.
+
 ## Installation
 https://git-scm.com/install/windows (Git installation)
 ### Step 1: Clone the Repository
@@ -157,13 +171,36 @@ cd AI-Based_Plant_Disease_Identification_Application
 
 ### Step 6: Alternative - Docker Setup (Optional)
 
-If you prefer using Docker:
+If you prefer using Docker on Windows, use the following sequence:
+
+1. Open Docker Desktop and confirm it is running.
+2. From the project root, build and start the stack:
 
 ```bash
-docker-compose up -d
+docker compose up --build
 ```
 
-This will start all services (backend, frontend, database, Ollama) in containers.
+3. Pull the LLM model inside the Ollama container (first run only):
+
+```bash
+docker exec -it plant-disease-ollama ollama pull llama2
+```
+
+4. Open the app and API docs:
+
+```bash
+http://localhost
+http://localhost:8000/docs
+```
+
+This starts backend, frontend, PostgreSQL, Ollama, and MLflow in containers.
+
+If Docker still fails to start on Windows, check WSL:
+
+```bash
+wsl --status
+wsl -l -v
+```
 
 ## Usage
 
@@ -215,6 +252,11 @@ npm test
 4. **Port conflicts:**
    - Backend: Change port in `uvicorn` command
    - Frontend: Check `vite.config.js` for port settings
+
+5. **Docker Desktop Linux engine not found:**
+   - Start Docker Desktop and wait for Engine running
+   - Run `docker info` and confirm a `Server` section appears
+   - If needed, verify WSL: `wsl --status` and `wsl -l -v`
 
 5. **Memory issues:**
    - Reduce batch sizes in model configurations
