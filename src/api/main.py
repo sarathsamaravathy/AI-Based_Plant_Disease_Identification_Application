@@ -442,6 +442,21 @@ def _prefer_localized_list(values: List[str], fallback: List[str], language: str
     return values
 
 
+def _fallback_disease_name_for_language(
+    language: str,
+    localized_fallback: str,
+    disease_name_en: Optional[str] = None,
+    current_disease_name: Optional[str] = None,
+) -> str:
+    if language == "en":
+        return disease_name_en or localized_fallback
+
+    if disease_name_en:
+        return localized_fallback
+
+    return current_disease_name or localized_fallback
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
@@ -673,7 +688,12 @@ async def retranslate_diagnosis(
             return {
                 "disease_name": _prefer_localized_text(
                     llm_result.get("disease_name_localized", ""),
-                    current_disease_name or disease_name_en or localized["disease_name"],
+                    _fallback_disease_name_for_language(
+                        language,
+                        localized["disease_name"],
+                        disease_name_en=disease_name_en,
+                        current_disease_name=current_disease_name,
+                    ),
                     language,
                 ) or disease_name_en,
                 "disease_name_en": disease_name_en,
@@ -700,7 +720,12 @@ async def retranslate_diagnosis(
             }
 
     return {
-        "disease_name": current_disease_name or disease_name_en or data["disease_name"],
+        "disease_name": _fallback_disease_name_for_language(
+            language,
+            data["disease_name"],
+            disease_name_en=disease_name_en,
+            current_disease_name=current_disease_name,
+        ),
         "disease_name_en": disease_name_en or "",
         "confidence_score": confidence,
         "severity_level": severity,
