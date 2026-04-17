@@ -295,6 +295,7 @@ npm test
     - Rebuild frontend image without cache:
        `docker compose build --no-cache --progress=plain frontend`
     - Start stack again: `docker compose up --build`
+   - If the network uses SSL inspection/proxy, the frontend Docker build now applies npm fallback settings automatically (`strict-ssl=false` with retry install path).
 
 ### Getting Help
 
