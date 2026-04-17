@@ -441,13 +441,13 @@ async def diagnose(
         if _vision_model is not None:
             # Real inference path
             image_bytes = await file.read()
-            disease_name, confidence = _vision_model.predict_class(image_bytes)
+            disease_name_en, confidence = _vision_model.predict_class(image_bytes)
             pipeline_mode = "real_vision"
 
             llm_result = {}
             if _llm_engine is not None:
                 llm_result = _llm_engine.generate_diagnosis(
-                    disease_name=disease_name,
+                    disease_name=disease_name_en,
                     confidence_score=confidence,
                     symptoms=[],
                     plant_type=plant_type or "unknown",
@@ -455,6 +455,9 @@ async def diagnose(
                 )
                 if llm_result.get("llm_generated"):
                     pipeline_mode = "real_vision_llm"
+
+            # Use LLM-localized disease name; fall back to English class name
+            disease_name = llm_result.get("disease_name_localized") or disease_name_en
 
             # Keep details in the selected language even if LLM is unavailable
             # or returns incomplete content.
@@ -466,6 +469,7 @@ async def diagnose(
             severity = llm_result.get("severity_level", "medium")
         else:
             # Mock data path
+            disease_name_en = ""
             data = MOCK_IMAGE_DIAGNOSIS.get(language, MOCK_IMAGE_DIAGNOSIS["en"])
             disease_name = data["disease_name"]
             confidence = 0.72
@@ -486,6 +490,7 @@ async def diagnose(
         return {
             "diagnosis_id": diagnosis_id,
             "disease_name": disease_name,
+            "disease_name_en": disease_name_en,
             "confidence_score": confidence,
             "severity_level": severity,
             "symptoms": symptoms,
@@ -576,8 +581,18 @@ async def diagnose_text(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/v1/diagnose/retranslate")
-async def retranslate_diagnosis(diagnosis_type: str = "image", language: str = "en"):
-    """Return translated mock diagnosis for the given type and language."""
+async def retranslate_diagnosis(
+    diagnosis_type: str = "image",
+    language: str = "en",
+    disease_name_en: Optional[str] = None,
+    plant_type: Optional[str] = None,
+):
+    """Return translated diagnosis for the given type and language.
+
+    When disease_name_en is provided (real vision pipeline result) and the
+    LLM is available, re-runs the LLM to produce a fully localised response.
+    Falls back to localised mock data when LLM is unavailable.
+    """
     if diagnosis_type == "text":
         data = MOCK_TEXT_DIAGNOSIS.get(language, MOCK_TEXT_DIAGNOSIS["en"])
         confidence = 0.65
@@ -587,8 +602,33 @@ async def retranslate_diagnosis(diagnosis_type: str = "image", language: str = "
         confidence = 0.72
         severity = "medium"
 
+    # If we have the original English disease name, try to re-generate via LLM
+    if disease_name_en and _llm_engine is not None and _llm_engine.is_available():
+        llm_result = _llm_engine.generate_diagnosis(
+            disease_name=disease_name_en,
+            confidence_score=confidence,
+            symptoms=[],
+            plant_type=plant_type or "unknown",
+            language=language,
+        )
+        if llm_result.get("llm_generated"):
+            localized = MOCK_IMAGE_DIAGNOSIS.get(language, MOCK_IMAGE_DIAGNOSIS["en"])
+            return {
+                "disease_name": llm_result.get("disease_name_localized") or disease_name_en,
+                "disease_name_en": disease_name_en,
+                "confidence_score": confidence,
+                "severity_level": llm_result.get("severity_level", severity),
+                "symptoms": llm_result.get("symptoms") or localized["symptoms"],
+                "treatment_recommendations": llm_result.get("treatment_recommendations") or localized["treatment_recommendations"],
+                "preventive_measures": llm_result.get("preventive_measures") or localized["preventive_measures"],
+                "farmer_friendly_explanation": llm_result.get("farmer_friendly_explanation") or localized["explanation"],
+                "audio_available": False,
+                "language": language,
+            }
+
     return {
         "disease_name": data["disease_name"],
+        "disease_name_en": disease_name_en or "",
         "confidence_score": confidence,
         "severity_level": severity,
         "symptoms": data["symptoms"],

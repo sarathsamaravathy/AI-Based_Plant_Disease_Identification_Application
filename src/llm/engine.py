@@ -50,6 +50,7 @@ IMPORTANT LANGUAGE RULE:
 
 Think step-by-step, then respond ONLY with a single valid JSON object in this exact schema:
 {{
+  "disease_name_localized": "<disease name written in {target_language_name}>",
   "farmer_explanation": "<2-3 plain sentences a farmer with no technical background can understand>",
   "treatment_steps": ["<step 1>", "<step 2>", "<step 3>", "<step 4>"],
   "preventive_measures": ["<measure 1>", "<measure 2>", "<measure 3>"],
@@ -81,13 +82,11 @@ class DiagnosisEngine:
 
     # ------------------------------------------------------------------
     # Public API
-    # --target_language_name = LANGUAGE_NAMES.get(language, "English")
-        prompt = DIAGNOSIS_PROMPT.format(
-            disease_name=disease_name,
-            confidence_pct=round(confidence_score * 100, 1),
-            plant_type=plant_type or "unknown crop",
-            symptoms_list=", ".join(symptoms) if symptoms else "none reported",
-            target_language_name=target_language_name
+    # ------------------------------------------------------------------
+
+    def generate_diagnosis(
+        self,
+        disease_name: str,
         confidence_score: float,
         symptoms: List[str],
         plant_type: str,
@@ -99,11 +98,13 @@ class DiagnosisEngine:
         Falls back to a safe static response if Ollama is unreachable so
         that the API never returns a 500 error to the farmer.
         """
+        target_language_name = LANGUAGE_NAMES.get(language, "English")
         prompt = DIAGNOSIS_PROMPT.format(
             disease_name=disease_name,
             confidence_pct=round(confidence_score * 100, 1),
             plant_type=plant_type or "unknown crop",
             symptoms_list=", ".join(symptoms) if symptoms else "none reported",
+            target_language_name=target_language_name,
         )
         try:
             response = requests.post(
@@ -116,6 +117,7 @@ class DiagnosisEngine:
             parsed = json.loads(raw)
             logger.info(f"Ollama diagnosis generated for: {disease_name}")
             return {
+                "disease_name_localized": parsed.get("disease_name_localized", ""),
                 "farmer_friendly_explanation": parsed.get("farmer_explanation", ""),
                 "treatment_recommendations": parsed.get("treatment_steps", []),
                 "preventive_measures": parsed.get("preventive_measures", []),
@@ -142,13 +144,13 @@ class DiagnosisEngine:
     # ------------------------------------------------------------------
 
     def _fallback(self, disease_name: str) -> Dict:
+        # Return empty fields — main.py will substitute localised mock data
+        # so the user never sees raw English fallback strings.
         return {
-            "farmer_friendly_explanation": (
-                f"Disease detected: {disease_name}. "
-                "Please consult your local agricultural extension officer for treatment advice."
-            ),
-            "treatment_recommendations": ["Contact your local agricultural extension office for guidance."],
-            "preventive_measures": ["Monitor crops regularly and isolate infected plants."],
+            "disease_name_localized": "",
+            "farmer_friendly_explanation": "",
+            "treatment_recommendations": [],
+            "preventive_measures": [],
             "severity_level": "medium",
             "llm_generated": False,
         }

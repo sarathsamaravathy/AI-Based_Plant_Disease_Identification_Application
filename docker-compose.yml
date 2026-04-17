@@ -1,27 +1,64 @@
 version: '3.9'
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Quick start:
+#   1. docker compose up --build
+#   2. Open http://localhost (frontend)  |  http://localhost:8000/docs (API)
+#   3. First run: pull the LLM model inside the ollama container:
+#        docker exec -it plant-disease-ollama ollama pull llama2
+# ─────────────────────────────────────────────────────────────────────────────
+
 services:
+
+  # ── FastAPI backend ──────────────────────────────────────────────────────
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: plant-disease-api
+    restart: unless-stopped
     ports:
       - "8000:8000"
+    env_file: .env
     environment:
       - DATABASE_URL=postgresql://farmer:password@postgres:5432/plant_disease_db
-      - LLM_API_URL=http://ollama:11434/api
+      - LLM_API_URL=http://ollama:11434
+      - ALLOWED_ORIGINS=http://localhost,http://localhost:80
+      - AUTO_DOWNLOAD_PRETRAINED_MODEL=true
     depends_on:
-      - postgres
-      - ollama
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
     volumes:
       - ./logs:/app/logs
       - ./uploads:/app/uploads
       - ./models:/app/models
+      - ./mlruns:/app/mlruns
     networks:
       - plant-net
 
+  # ── Vue 3 frontend (nginx) ────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE=http://localhost:8000/api/v1
+    container_name: plant-disease-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - plant-net
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
   postgres:
     image: postgres:15-alpine
     container_name: plant-disease-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: farmer
       POSTGRES_PASSWORD: password
@@ -38,9 +75,11 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── Ollama (local LLM) ────────────────────────────────────────────────────
   ollama:
     image: ollama/ollama:latest
     container_name: plant-disease-ollama
+    restart: unless-stopped
     ports:
       - "11434:11434"
     volumes:
@@ -48,11 +87,12 @@ services:
     networks:
       - plant-net
 
+  # ── MLflow tracking ───────────────────────────────────────────────────────
   mlflow:
-    image: python:3.11-slim
+    image: ghcr.io/mlflow/mlflow:v2.13.0
     container_name: plant-disease-mlflow
-    working_dir: /app
-    command: "pip install mlflow && mlflow server --host 0.0.0.0 --port 5000"
+    restart: unless-stopped
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri /app/mlruns
     ports:
       - "5000:5000"
     volumes:
