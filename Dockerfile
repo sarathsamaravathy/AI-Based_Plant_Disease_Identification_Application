@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12.7-slim
 
 WORKDIR /app
 
@@ -9,14 +9,17 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libgl1 \
     libglib2.0-0 \
+    ca-certificates \
     curl \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
 COPY requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel certifi \
+    && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY src/ ./src/

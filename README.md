@@ -183,7 +183,20 @@ docker compose up --build
 3. Pull the LLM model inside the Ollama container (first run only):
 
 ```bash
+docker exec -it plant-disease-ollama ollama list
+```
+
+If your model is not listed, pull the same model name configured in `.env` (`LLM_MODEL`).
+Example:
+
+```bash
 docker exec -it plant-disease-ollama ollama pull llama2
+```
+
+If you set `LLM_MODEL=llama3`, then run:
+
+```bash
+docker exec -it plant-disease-ollama ollama pull llama3
 ```
 
 4. Open the app and API docs:
@@ -258,7 +271,15 @@ npm test
    - Run `docker info` and confirm a `Server` section appears
    - If needed, verify WSL: `wsl --status` and `wsl -l -v`
 
-5. **Memory issues:**
+6. **Docker build fails with `SSLCertVerificationError` during `pip install`:**
+   - Make sure system date/time is correct on the host machine
+   - Retry after Docker Desktop restart
+   - Ensure corporate proxy/SSL inspection is configured in Docker Desktop if applicable
+   - Rebuild with no cache after the latest Dockerfile update:
+     `docker compose build --no-cache api`
+   - Then run the stack again: `docker compose up --build`
+
+7. **Memory issues:**
    - Reduce batch sizes in model configurations
    - Use smaller models if available
 

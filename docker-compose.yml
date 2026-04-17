@@ -3,7 +3,7 @@
 #   1. docker compose up --build
 #   2. Open http://localhost (frontend)  |  http://localhost:8000/docs (API)
 #   3. First run: pull the LLM model inside the ollama container:
-#        docker exec -it plant-disease-ollama ollama pull llama2
+#        docker exec -it plant-disease-ollama ollama pull <value-of-LLM_MODEL>
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
