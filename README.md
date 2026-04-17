@@ -46,7 +46,7 @@ cd AI-Based_Plant_Disease_Identification_Application
 2. Pull the required model:
 
 ```bash
-ollama pull llama2  # or any supported model
+ollama pull llama3  # or any supported model
 ```
 
 3. Start Ollama service:
