@@ -49,7 +49,6 @@ ENV/
 uploads/
 logs/
 *.log
-models/**
 !models/.gitkeep
 mlruns/
 data/raw/
