@@ -134,7 +134,7 @@ ollama run llama3
 cd AI-Based_Plant_Disease_Identification_Application
 ```
    ```bash
-   #use your python 3.2.17 directory below (type "where python" in command prompt) 
+   #use your python 3.12.7 directory below (type "where python" in command prompt) 
     C:\Users\sarat\AppData\Local\Programs\Python\Python312\python -m venv venv
    ```
 
