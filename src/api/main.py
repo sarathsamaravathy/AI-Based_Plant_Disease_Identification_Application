@@ -163,6 +163,14 @@ class HealthResponse(BaseModel):
     status: str
     timestamp: str
 
+
+class FeedbackRequest(BaseModel):
+    """Feedback payload expected from the frontend."""
+    diagnosis_id: str
+    diagnosis_correct: Optional[bool] = None
+    recommendation_helpful: Optional[bool] = None
+    user_notes: Optional[str] = None
+
 MOCK_IMAGE_DIAGNOSIS = {
     "en": {
         "disease_name": "Leaf Blight",
@@ -756,21 +764,21 @@ async def get_supported_languages():
     }
 
 @app.post("/api/v1/feedback")
-async def submit_feedback(diagnosis_id: str, feedback: dict):
+async def submit_feedback(payload: FeedbackRequest):
     """Submit feedback for diagnosis (RLHF)."""
     try:
-        logger.info(f"Feedback received for diagnosis {diagnosis_id}")
+        logger.info(f"Feedback received for diagnosis {payload.diagnosis_id}")
         # Tag the existing MLflow run with feedback so it can be used for future fine-tuning
         if _mlflow_enabled:
             try:
                 import mlflow
                 mlflow.set_tags({
-                    f"feedback.diagnosis_correct": str(feedback.get("diagnosis_correct")),
-                    f"feedback.recommendation_helpful": str(feedback.get("recommendation_helpful")),
+                    "feedback.diagnosis_correct": str(payload.diagnosis_correct),
+                    "feedback.recommendation_helpful": str(payload.recommendation_helpful),
                 })
             except Exception:
                 pass
-        return {"status": "feedback_recorded"}
+        return {"status": "feedback_recorded", "diagnosis_id": payload.diagnosis_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
