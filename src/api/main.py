@@ -450,17 +450,29 @@ def _prefer_localized_list(values: List[str], fallback: List[str], language: str
     return values
 
 
+def _humanize_disease_name(disease_name: Optional[str]) -> str:
+    """Convert model class labels like Tomato___Septoria_leaf_spot to readable text."""
+    if not disease_name:
+        return ""
+    parts = disease_name.split("___", 1)
+    raw = parts[1] if len(parts) == 2 else parts[0]
+    return re.sub(r"\s+", " ", raw.replace("_", " ")).strip()
+
+
 def _fallback_disease_name_for_language(
     language: str,
     localized_fallback: str,
     disease_name_en: Optional[str] = None,
     current_disease_name: Optional[str] = None,
 ) -> str:
+    humanized = _humanize_disease_name(disease_name_en)
+
     if language == "en":
-        return disease_name_en or localized_fallback
+        return humanized or disease_name_en or localized_fallback
 
     if disease_name_en:
-        return localized_fallback
+        # Preserve the real prediction when translated content is unavailable.
+        return current_disease_name or humanized or disease_name_en
 
     return current_disease_name or localized_fallback
 
@@ -512,11 +524,15 @@ async def diagnose(
             # Keep details in the selected language even if LLM is unavailable
             # or returns incomplete content.
             localized = MOCK_IMAGE_DIAGNOSIS.get(language, MOCK_IMAGE_DIAGNOSIS["en"])
-            disease_name = _prefer_localized_text(
-                llm_result.get("disease_name_localized", ""),
-                localized["disease_name"],
-                language,
-            ) or disease_name_en
+            humanized_disease_name = _humanize_disease_name(disease_name_en) or disease_name_en
+            if llm_result.get("llm_generated") and llm_result.get("disease_name_localized"):
+                disease_name = _prefer_localized_text(
+                    llm_result.get("disease_name_localized", ""),
+                    humanized_disease_name or localized["disease_name"],
+                    language,
+                ) or humanized_disease_name
+            else:
+                disease_name = humanized_disease_name or localized["disease_name"]
             symptoms = _prefer_localized_list(llm_result.get("symptoms", []), localized["symptoms"], language)
             treatment = _prefer_localized_list(
                 llm_result.get("treatment_recommendations", []),
