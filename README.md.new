@@ -1,0 +1,5 @@
+# Commands
+## Backend
+`uv run uvicorn src.api.main:app --reload`
+## Frontend
+`npm run dev`

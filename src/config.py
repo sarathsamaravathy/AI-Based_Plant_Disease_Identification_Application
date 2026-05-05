@@ -1,10 +1,12 @@
-"""Configuration Management"""
+"""Configuration Management."""
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 
 class Settings(BaseSettings):
     """Application settings from environment variables."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
     
     # API Configuration
     api_host: str = "0.0.0.0"
@@ -60,16 +62,12 @@ class Settings(BaseSettings):
     enable_feedback_loop: bool = True
     enable_offline_mode: bool = False
     
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-    
     @property
     def supported_langs_list(self) -> List[str]:
-        return self.supported_languages.split(",")
+        return [lang.strip() for lang in self.supported_languages.split(",") if lang.strip()]
     
     @property
     def allowed_origins_list(self) -> List[str]:
-        return self.allowed_origins.split(",")
+        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
 
 settings = Settings()
