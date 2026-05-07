@@ -54,5 +54,4 @@ data/raw/
 data/processed/
 data/vector_store/
 node_modules/
-dist/
 .DS_Store
