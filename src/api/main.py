@@ -40,6 +40,10 @@ import os
 import re
 import time
 import uuid
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +53,7 @@ logger = logging.getLogger(__name__)
 _vision_model = None        # VisionModel instance (None = use mock data)
 _llm_engine = None          # DiagnosisEngine instance
 _mlflow_enabled = False     # True when MLflow tracking is configured
+_leaf_validator_enabled = False  # Leaf validator enabled flag
 
 app = FastAPI(
     title="Plant Disease Identifier API",
@@ -73,14 +78,14 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Load vision model, connect LLM engine, and configure MLflow on startup."""
-    global _vision_model, _llm_engine, _mlflow_enabled
+    global _vision_model, _llm_engine, _mlflow_enabled, _leaf_validator_enabled
 
     logger.info("Starting Plant Disease Identifier API ...")
 
     # 1. MLflow -----------------------------------------------------------
     try:
         import mlflow
-        tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "./mlruns")
+        tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "file:./mlruns")
         mlflow.set_tracking_uri(tracking_uri)
         mlflow.set_experiment("plant_disease_diagnosis")
         _mlflow_enabled = True
@@ -118,20 +123,27 @@ async def startup_event():
     # 3. LLM engine -------------------------------------------------------
     try:
         from src.llm.engine import DiagnosisEngine
-        ollama_url = os.getenv("LLM_API_URL", "http://localhost:11434")
-        llm_model = os.getenv("LLM_MODEL", "llama3")
         llm_timeout = int(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "20"))
         _llm_engine = DiagnosisEngine(
-            ollama_url=ollama_url,
-            model=llm_model,
             request_timeout_seconds=llm_timeout,
         )
         if _llm_engine.is_available():
-            logger.info(f"Ollama reachable at {ollama_url} – LLM generation active.")
+            logger.info("OpenRouter API reachable - LLM generation active.")
         else:
-            logger.info("Ollama not reachable – LLM will use fallback responses.")
+            logger.info("OpenRouter not reachable - LLM will use fallback responses.")
     except Exception as exc:
         logger.warning(f"LLM engine init failed: {exc}")
+
+    # 4. Leaf validator ----------------------------------------------------
+    try:
+        from src.vision.leaf_validator import init_leaf_validator
+        _leaf_validator_enabled = init_leaf_validator()
+        if _leaf_validator_enabled:
+            logger.info("Leaf validator initialized with OpenRouter")
+        else:
+            logger.info("Leaf validator disabled - no OpenRouter API key")
+    except Exception as exc:
+        logger.warning(f"Leaf validator init failed: {exc}")
 
 
 @app.on_event("shutdown")
@@ -506,6 +518,13 @@ async def diagnose(
         if _vision_model is not None:
             # Real inference path
             image_bytes = await file.read()
+            
+            # Leaf validation check
+            if _leaf_validator_enabled:
+                from src.vision.leaf_validator import validate_leaf
+                if not validate_leaf(image_bytes):
+                    raise HTTPException(status_code=400, detail="This image does not appear to contain a plant leaf. Please upload a clear image of a plant leaf for disease diagnosis.")
+            
             disease_name_en, confidence = _vision_model.predict_class(image_bytes)
             pipeline_mode = "real_vision"
 

@@ -16,6 +16,7 @@ dependencies = [
     "jupyter>=1.1.1",
     "langchain==1.2.15",
     "langchain-community==0.4.1",
+    "langchain-openrouter>=0.2.3",
     "langdetect==1.0.9",
     "loguru==0.7.3",
     "mlflow==3.11.1",

@@ -1,23 +1,27 @@
-"""LLM Reasoning Engine - Ollama Integration
+"""LLM Reasoning Engine - OpenRouter Integration
 
-This module integrates with a locally-running Ollama instance to generate
+This module integrates with OpenRouter API to generate
 farmer-friendly disease diagnoses and treatment recommendations using
 chain-of-thought prompting.
 
-Why Ollama?
+Why OpenRouter?
 -----------
-- Runs entirely on-premise: farmer data never leaves the local server.
-- No API key or internet connection required after initial model download.
-- Supports quantized models (e.g. llama3:8b-q4) that run on CPU-only hardware,
-  making deployment viable on low-cost edge devices in rural areas.
-- Switchable: any Ollama-compatible model can be swapped via the LLM_MODEL
+- Access to multiple models via single API
+- No local model management required
+- High-quality models for agricultural diagnosis
+- Switchable: any OpenRouter model can be swapped via OPENROUTER_MODEL
   environment variable without code changes.
 """
 
 import json
-import requests
+from langchain_openrouter import ChatOpenRouter
 from typing import Dict, List, Optional
+import os
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -60,25 +64,24 @@ Do not include any text outside the JSON object."""
 
 
 class DiagnosisEngine:
-    """LLM-based diagnosis engine that calls a local Ollama server.
+    """LLM-based diagnosis engine that calls OpenRouter API.
 
     The engine builds a structured prompt containing the vision model output,
-    sends it to Ollama via its HTTP /api/generate endpoint, and parses the
+    sends it to OpenRouter API, and parses the
     JSON response back into structured recommendation fields.
     """
 
     def __init__(
         self,
-        ollama_url: str = "http://localhost:11434",
-        model: str = "llama3",
+        api_key: str = None,
+        model: str = None,
         request_timeout_seconds: int = 20,
     ):
-        base = ollama_url.rstrip("/")
-        # Accept either base URL (...:11434) or API URL (...:11434/api)
-        self.ollama_url = base[:-4] if base.endswith("/api") else base
-        self.model = model
+        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
+        self.model = model or os.getenv("DIAGNOSIS_MODEL", "openrouter/owl-alpha")
         self.request_timeout_seconds = request_timeout_seconds
-        logger.info(f"DiagnosisEngine initialised | Ollama URL: {ollama_url} | model: {model}")
+        self.client = ChatOpenRouter(api_key=self.api_key, model=self.model)
+        logger.info(f"DiagnosisEngine initialised | OpenRouter model: {self.model}")
 
     # ------------------------------------------------------------------
     # Public API
@@ -93,9 +96,9 @@ class DiagnosisEngine:
         language: str = "en",
         context: Optional[Dict] = None,
     ) -> Dict:
-        """Call Ollama and return structured diagnosis data.
+        """Call OpenRouter and return structured diagnosis data.
 
-        Falls back to a safe static response if Ollama is unreachable so
+        Falls back to a safe static response if OpenRouter is unreachable so
         that the API never returns a 500 error to the farmer.
         """
         target_language_name = LANGUAGE_NAMES.get(language, "English")
@@ -107,15 +110,12 @@ class DiagnosisEngine:
             target_language_name=target_language_name,
         )
         try:
-            response = requests.post(
-                f"{self.ollama_url}/api/generate",
-                json={"model": self.model, "prompt": prompt, "stream": False, "format": "json"},
-                timeout=self.request_timeout_seconds,
-            )
-            response.raise_for_status()
-            raw = response.json().get("response", "{}")
+            from langchain_core.messages import HumanMessage
+            message = HumanMessage(content=prompt)
+            response = self.client.invoke([message])
+            raw = response.content
             parsed = json.loads(raw)
-            logger.info(f"Ollama diagnosis generated for: {disease_name}")
+            logger.info(f"OpenRouter diagnosis generated for: {disease_name}")
             return {
                 "disease_name_localized": parsed.get("disease_name_localized", ""),
                 "farmer_friendly_explanation": parsed.get("farmer_explanation", ""),
@@ -124,20 +124,15 @@ class DiagnosisEngine:
                 "severity_level": parsed.get("urgency", "medium"),
                 "llm_generated": True,
             }
-        except requests.exceptions.ConnectionError:
-            logger.warning("Ollama not reachable – using static fallback response.")
-            return self._fallback(disease_name)
         except Exception as e:
             logger.error(f"LLM engine error: {e}")
             return self._fallback(disease_name)
 
     def is_available(self) -> bool:
-        """Return True if the Ollama service is reachable."""
-        try:
-            r = requests.get(f"{self.ollama_url}/api/tags", timeout=3)
-            return r.status_code == 200
-        except Exception:
-            return False
+        """Return True if OpenRouter API is reachable."""
+        # During startup, just check if API key exists to avoid blocking
+        # Actual connectivity will be tested during first request
+        return bool(self.api_key)
 
     # ------------------------------------------------------------------
     # Internal helpers
